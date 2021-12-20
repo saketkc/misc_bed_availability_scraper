@@ -1,0 +1,5 @@
+tqdm
+bs4
+selenium
+requests
+pillow
