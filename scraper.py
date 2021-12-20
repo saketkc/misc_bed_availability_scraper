@@ -11,10 +11,13 @@ if __name__=='__main__':
   driver = webdriver.Chrome(chrome_options=options)  
   driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
   date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
-  driver.save_screenshot('images/'+date_str+'.png')
-  img=Image.open('images/'+date_str+'.png')
-  img.save('images/'+date_str+'.webp')
-  print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
+  if not os.path.exists('images/'+date_str+'.png'):
+    driver.save_screenshot('images/'+date_str+'.png')
+    img=Image.open('images/'+date_str+'.png')
+    img.save('images/'+date_str+'.webp')
+    print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
+  else:
+    print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
   # ~ driver.find_element_by_xpath('//a[@href="#state-data"]').click()
   # ~ time.sleep(3)
   # ~ htm=driver.page_source
