@@ -10,6 +10,7 @@ if __name__=='__main__':
   options.add_argument("--window-size=1366,768")
   driver = webdriver.Chrome(chrome_options=options)  
   driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
+  time.sleep(10)
   date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
   if not os.path.exists('images/'+date_str+'.png'):
     driver.save_screenshot('images/'+date_str+'.png')
