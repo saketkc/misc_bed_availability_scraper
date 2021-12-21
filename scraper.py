@@ -7,7 +7,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
   
-  for city in ['bengaluru','chennai']:
+  # ~ for city in ['bengaluru','chennai']:
+  for city in ['chennai']:
     if city=='bengaluru'
       #BENGALURU
       options = webdriver.ChromeOptions();
@@ -72,6 +73,6 @@ if __name__=='__main__':
         vacant_o2_beds+=i['CovidBedDetails']['VaccantO2Beds']
         vacant_non_o2_beds+=i['CovidBedDetails']['VaccantNonO2Beds']
         vacant_icu_beds+=i['CovidBedDetails']['VaccantICUBeds']
-    
+    print('In Chennai, on %s, tot: %d %d %d,occupied: %d %d %d' %(date_str,tot_o2_beds,tot_non_o2_beds,tot_icu_beds,occupied_o2_beds,occupied_non_o2_beds,occupied_icu_beds))
       
   
