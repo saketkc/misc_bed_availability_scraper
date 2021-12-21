@@ -8,7 +8,7 @@ on:
     branches:
       - master
     paths-ignore:
-      - 'data.csv'
+      - 'data.chennai.csv'
   #~ pull_request:
   
 
