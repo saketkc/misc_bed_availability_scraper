@@ -34,15 +34,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
-    - name: Scrape mohfw website
+    #~ - name: Setup upterm session
+      #~ uses: lhotari/action-upterm@v1
+    - name: Scrape Chennai beds data
       run: |
         python scraper.py
-    - name: Commit modified data.csv
+    - name: Commit modified data.chennai.csv
       run: |
         git config --global user.name 'Your Name'
         git config --global user.email 'your-username@users.noreply.github.com'
-        git add images/*.webp
         git commit -am "Automated report"
         git push

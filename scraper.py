@@ -1,7 +1,7 @@
 from selenium import webdriver;
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
-
+import json
 
 if __name__=='__main__':
   
@@ -9,7 +9,7 @@ if __name__=='__main__':
   
   # ~ for city in ['bengaluru','chennai']:
   for city in ['chennai']:
-    if city=='bengaluru'
+    if city=='bengaluru':
       #BENGALURU
       options = webdriver.ChromeOptions();
       options.add_argument('--ignore-certificate-errors');
@@ -73,6 +73,18 @@ if __name__=='__main__':
         vacant_o2_beds+=i['CovidBedDetails']['VaccantO2Beds']
         vacant_non_o2_beds+=i['CovidBedDetails']['VaccantNonO2Beds']
         vacant_icu_beds+=i['CovidBedDetails']['VaccantICUBeds']
-    print('In Chennai, on %s, tot: %d %d %d,occupied: %d %d %d' %(date_str,tot_o2_beds,tot_non_o2_beds,tot_icu_beds,occupied_o2_beds,occupied_non_o2_beds,occupied_icu_beds))
+      print('In Chennai, on %s\nO2: %d/%d occupied\nNon-O2 %d/%d occupied\nICU: %d/%d occupied' %(date_str,occupied_o2_beds,tot_o2_beds,occupied_non_o2_beds,tot_non_o2_beds,occupied_icu_beds,tot_icu_beds))
       
+      
+      a=open('data.chennai.csv');r=csv.reader(a);info=[i for i in r];a.close()
+      dates=list(set([i[0] for i in info[1:]]));dates.sort()
+      
+      if date_str in dates: 
+        # ~ dont_update_data_csv=True
+        print('----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+      else:
+        #write to file
+        info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
+        a=open('data.csv','a');a.write(info);a.close()
+        print('Appended to data.chennai.csv: '+info)        
   
