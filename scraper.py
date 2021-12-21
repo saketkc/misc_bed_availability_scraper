@@ -1,4 +1,10 @@
 from selenium import webdriver;
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver import ActionChains
+
+
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
 import json
@@ -11,7 +17,7 @@ if __name__=='__main__':
   for city in ['chennai']:
     if city=='bengaluru':
       #BENGALURU
-      options = webdriver.ChromeOptions();
+      options=webdriver.ChromeOptions();
       options.add_argument('--ignore-certificate-errors');
       options.add_argument('--disable-gpu');
       options.add_argument("--headless")
@@ -19,6 +25,7 @@ if __name__=='__main__':
       driver=webdriver.Chrome(chrome_options=options)  
       driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
       driver.get('https://www.powerbi.com/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
+      driver.get('20.186.65.100/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
       time.sleep(10)
       date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
       if not os.path.exists('images/'+date_str+'.png'):
