@@ -85,6 +85,6 @@ if __name__=='__main__':
       else:
         #write to file
         info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
-        a=open('data.csv','a');a.write(info);a.close()
+        a=open('data.chennai.csv','a');a.write(info);a.close()
         print('Appended to data.chennai.csv: '+info)        
   
