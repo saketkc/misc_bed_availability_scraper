@@ -34,8 +34,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    #~ - name: Setup upterm session
-      #~ uses: lhotari/action-upterm@v1
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
     - name: Scrape Chennai beds data
       run: |
         python scraper.py

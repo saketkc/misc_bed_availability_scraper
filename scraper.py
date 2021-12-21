@@ -13,6 +13,7 @@ if __name__=='__main__':
       #BENGALURU
       options = webdriver.ChromeOptions();
       options.add_argument('--ignore-certificate-errors');
+      options.add_argument('--disable-gpu');
       options.add_argument("--headless")
       options.add_argument("--window-size=1366,768")
       driver=webdriver.Chrome(chrome_options=options)  
