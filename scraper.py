@@ -13,8 +13,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['pune']:
-  # ~ for city in ['hp','mp','chennai']:
+  # ~ for city in ['pune']:
+  for city in ['hp','mp','chennai','pune']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -131,7 +131,7 @@ if __name__=='__main__':
         info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
         a=open('data.chennai.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.chennai.csv: '+info)        
-    if city in ['mp','hp']:
+    if city in ['mp','hp','pune']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
