@@ -67,7 +67,7 @@ if __name__=='__main__':
       
       
       resp = requests.get(url, headers=headers)
-      print('api call status code: ', resp.status_code)
+      # ~ print('api call status code: ', resp.status_code)
       
       y=resp.json()
       
@@ -91,7 +91,7 @@ if __name__=='__main__':
         a=open('data.gbn.csv','a')
         if not dont_update_data_csv:
           a.write(info+'\n')
-        print(info)
+        print('gbn: '+info)
         a.close()
       else:
         print('could not get data from https://api.gbncovidtracker.in/hospitals')
