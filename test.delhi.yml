@@ -1,0 +1,48 @@
+name: CI build
+
+on:
+  schedule:
+  - cron:  '12 6 * * *'
+#~ on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'data.csv'
+  #~ pull_request:
+  
+
+jobs:
+  build:
+
+    env:
+      PY_COLORS: "1"
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        python-version: [3.6]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Scrape delhi beds dashboard
+      run: |
+        python scraper.delhi.py
+    - name: Scrape GBN beds dashboard
+      run: |
+        python scraper.gbn.py
+    - name: Commit modified data.csv
+      run: |
+        git config --global user.name 'Your Name'
+        git config --global user.email 'your-username@users.noreply.github.com'
+        git commit -am "Automated report"
+        git push
