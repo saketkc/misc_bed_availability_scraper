@@ -41,7 +41,8 @@ if __name__=='__main__':
       soup=BeautifulSoup(x,'html.parser');
       xx=soup('legend')[1].parent
       xx=xx('table')[0]
-      tot_beds,tot_normal,tot_o2,tot_icu,tot_vent,vacant_beds,vacant_normal,vacant_o2,vacant_icu,vacant_vent=[i.text for i in xx('td') if i.text.isnumeric()]
+      tot_beds,vacant_beds,tot_normal,vacant_normal,tot_o2,vacant_o2,tot_icu,vacant_icu,tot_vent,vacant_vent=[i.text for i in xx('td') if i.text.isnumeric()]
+      print(tot_beds,tot_normal,tot_o2,tot_icu,tot_vent,vacant_beds,vacant_normal,vacant_o2,vacant_icu,vacant_vent)
       occupied_normal=int(tot_normal)-int(vacant_normal)
       occupied_o2=int(tot_o2)-int(vacant_o2)
       occupied_icu=int(tot_icu)-int(vacant_icu)
