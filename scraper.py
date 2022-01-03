@@ -58,7 +58,7 @@ if __name__=='__main__':
             a=open('data.delhi.csv','a')
             if not dont_update_data_csv:
                   a.write(info+'\n')
-                  print(info)
+                  print('delhi: '+info)
                   a.close()
       else:
             print('could not get data from https://coronabeds.jantasamvad.org/covid-info.js')
@@ -76,6 +76,7 @@ if __name__=='__main__':
       occupied_icu=int(tot_icu)-int(vacant_icu)
       occupied_vent=int(tot_vent)-int(vacant_vent)
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':')
       print(row)
     elif city=='hp':
       x=os.popen('curl -k https://covidcapacity.hp.gov.in/index.php').read()
@@ -91,7 +92,7 @@ if __name__=='__main__':
       tot_normal=int(xx.parent.parent('td')[0].text)
       occupied_normal=int(xx.parent.parent('td')[1].text)
       row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
-      print(row)
+      print(city+':');print(row)
     elif city=='mp':
       x=os.popen('curl -k http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-dashboard/').read()
       from bs4 import BeautifulSoup
@@ -99,7 +100,7 @@ if __name__=='__main__':
       xx=soup('a',attrs={'href':'http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-details'})
       tot_normal,occupied_normal,vacant_normal,tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu=[i.text for i in xx if i.text.isnumeric()]
       row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
-      print(row)
+      print(city+':');print(row)
     elif city=='chennai':
       #CHENNAI
       import requests
