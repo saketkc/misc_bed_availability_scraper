@@ -13,8 +13,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['hp']:
-  for city in ['hp','mp','chennai']:
+  for city in ['pune']:
+  # ~ for city in ['hp','mp','chennai']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -35,6 +35,19 @@ if __name__=='__main__':
         print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
       else:
         print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
+    elif city=='pune':
+      x=os.popen('curl -k https://divcommpunecovid.com/ccsbeddashboard/hsr').read()
+      from bs4 import BeautifulSoup
+      soup=BeautifulSoup(x,'html.parser');
+      xx=soup('legend')[1].parent
+      xx=xx('table')[0]
+      tot_beds,tot_normal,tot_o2,tot_icu,tot_vent,vacant_beds,vacant_normal,vacant_o2,vacant_icu,vacant_vent=[i.text for i in xx('td') if i.text.isnumeric()]
+      occupied_normal=int(tot_normal)-int(vacant_normal)
+      occupied_o2=int(tot_o2)-int(vacant_o2)
+      occupied_icu=int(tot_icu)-int(vacant_icu)
+      occupied_vent=int(tot_vent)-int(vacant_vent)
+      row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(row)
     elif city=='hp':
       x=os.popen('curl -k https://covidcapacity.hp.gov.in/index.php').read()
       from bs4 import BeautifulSoup
