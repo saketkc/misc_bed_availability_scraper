@@ -11,10 +11,10 @@ import json
 
 if __name__=='__main__':
   
-  date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
+  date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['bengaluru','chennai']:
-  for city in ['chennai']:
+  # ~ for city in ['hp']:
+  for city in ['hp','mp','chennai']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -35,6 +35,29 @@ if __name__=='__main__':
         print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
       else:
         print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
+    elif city=='hp':
+      x=os.popen('curl -k https://covidcapacity.hp.gov.in/index.php').read()
+      from bs4 import BeautifulSoup
+      soup=BeautifulSoup(x,'html.parser');
+      xx=soup('a',attrs={'id':'oxygenbedmodel'})[0]
+      tot_o2=int(xx.parent.parent('td')[0].text)
+      occupied_o2=int(xx.parent.parent('td')[1].text)
+      xx=soup('a',attrs={'id':'icubedmodel'})[0]
+      tot_icu=int(xx.parent.parent('td')[0].text)
+      occupied_icu=int(xx.parent.parent('td')[1].text)
+      xx=soup('a',attrs={'id':'Standardbedmodel'})[0]
+      tot_normal=int(xx.parent.parent('td')[0].text)
+      occupied_normal=int(xx.parent.parent('td')[1].text)
+      row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
+      print(row)
+    elif city=='mp':
+      x=os.popen('curl -k http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-dashboard/').read()
+      from bs4 import BeautifulSoup
+      soup=BeautifulSoup(x,'html.parser');
+      xx=soup('a',attrs={'href':'http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-details'})
+      tot_normal,occupied_normal,vacant_normal,tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu=[i.text for i in xx if i.text.isnumeric()]
+      row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
+      print(row)
     elif city=='chennai':
       #CHENNAI
       import requests
@@ -95,4 +118,16 @@ if __name__=='__main__':
         info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
         a=open('data.chennai.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.chennai.csv: '+info)        
+    if city in ['mp','hp']:
+      csv_fname='data.'+city+'.csv'
+      a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
+      dates=list(set([i[0] for i in info[1:]]));dates.sort()
+      
+      if date_str in dates: 
+        # ~ dont_update_data_csv=True
+        print('----------\n\nData for %s already exists in %s!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str,csv_fname))
+      else:
+        #write to file
+        a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
+        print('Appended to %s :%s' %(csv_fname,str(row)))        
   
