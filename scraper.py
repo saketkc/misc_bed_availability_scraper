@@ -54,12 +54,10 @@ if __name__=='__main__':
             # ~ for bed_type in ['beds', 'oxygen_beds', 'covid_icu_beds', 'ventilators', 'icu_beds_without_ventilator', 'noncovid_icu_beds']:
             # ~ info+='%s,%s,%d,%d,%d\n' %(date_str,bed_type,y[bed_type]['All']['total'],y[bed_type]['All']['occupied'],y[bed_type]['All']['vacant'])
             info+='%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d' %(date_str,y['beds']['All']['total'],y['oxygen_beds']['All']['total'],y['covid_icu_beds']['All']['total'],y['ventilators']['All']['total'],y['icu_beds_without_ventilator']['All']['total'],y['noncovid_icu_beds']['All']['total'],y['beds']['All']['occupied'],y['oxygen_beds']['All']['occupied'],y['covid_icu_beds']['All']['occupied'],y['ventilators']['All']['occupied'],y['icu_beds_without_ventilator']['All']['occupied'],y['noncovid_icu_beds']['All']['occupied'])    
-            #write to file
-            a=open('data.delhi.csv','a')
-            if not dont_update_data_csv:
-                  a.write(info+'\n')
-                  print('delhi: '+info)
-                  a.close()
+            print('delhi: '+info)
+
+            #write to file            
+            if not dont_update_data_csv: a=open('data.delhi.csv','a');a.write(info+'\n');a.close()
       else:
             print('could not get data from https://coronabeds.jantasamvad.org/covid-info.js')
 
