@@ -1,4 +1,4 @@
-Date,total_beds,total_oxygen_beds,total_covid_icu_beds,total_ventilators,total_icu_beds_without_ventilator,total_noncovid_icu_beds,occupied_beds,occupied_oxygen_beds,occupied_covid_icu_beds,occupied_ventilators,occupied_icu_beds_without_ventilator,occupied_noncovid_icu_beds
+date,total_beds,total_oxygen_beds,total_covid_icu_beds,total_ventilators,total_icu_beds_without_ventilator,total_noncovid_icu_beds,occupied_beds,occupied_oxygen_beds,occupied_covid_icu_beds,occupied_ventilators,occupied_icu_beds_without_ventilator,occupied_noncovid_icu_beds
 2020-09-27,15820,0,338,1319,1657,0,6679,0,468,822,1290,0
 2020-11-03,,,,1244,,,,,,843,,
 2020-11-04,15782,0,686,1245,1931,1557,6942,0,552,847,1399,1153
