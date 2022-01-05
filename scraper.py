@@ -166,7 +166,7 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['hp','mp','chennai','pune','delhi','gbn','tn','gurugram']:
+  for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn']:
   # ~ for city in ['gurugram']:
     if city=='bengaluru':
       #BENGALURU
