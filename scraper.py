@@ -181,7 +181,7 @@ def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):
       print(cmd);    os.system(cmd)
       os.system('ls -a *.pdf')
       tries+=1
-   if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf' #download through proxy worked
+    if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf' #download through proxy worked
       
   #get date
   cmd='pdftotext -x 10 -y 150 -W 200 -H 200 -layout -f 1 -l 1  "'+bulletin+'" t.txt';os.system(cmd)
