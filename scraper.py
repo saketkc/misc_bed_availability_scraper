@@ -166,7 +166,7 @@ def gurugram_auto_parse_latest_bulletin():
 def mumbai_bulletin_auto_parser(bulletin=''):  
   if not bulletin: #download latest bulletin
     # ~ cmd='wget --no-check-certificate --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
-    cmd='curl -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
+    cmd='curl --max-time 60  -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
     print(cmd);os.system(cmd)
     bulletin='Dashboard.pdf'
 
