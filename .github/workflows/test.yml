@@ -37,7 +37,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         sudo apt-get install -y poppler-utils
-        - name: Scrape city beds data
+    - name: Scrape city beds data
       run: |
         python scraper.py
     - name: Commit modified csv files
