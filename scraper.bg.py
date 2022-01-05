@@ -7,6 +7,7 @@ from selenium import webdriver
 # ~ from webdriver_manager.chrome import ChromeDriverManager
 
 
+
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
 import json
@@ -19,12 +20,13 @@ if __name__=='__main__':
   for city in ['bengaluru']:
     if city=='bengaluru':
       #BENGALURU
+      HOME=os.getenv('HOME')+'/';
       options=webdriver.ChromeOptions();
       options.add_argument('--ignore-certificate-errors');
       options.add_argument('--disable-gpu');
       options.add_argument("--headless")
       options.add_argument("--window-size=1366,768")
-      options.add_argument("user-data-dir=/home/ani/.config/google-chrome/Default") #Path to your chrome profile
+      options.add_argument("user-data-dir="+HOME+".config/google-chrome/Default") #Path to your chrome profile
       options.add_experimental_option("excludeSwitches", ["enable-automation"])
       options.add_experimental_option('useAutomationExtension', False)
       # ~ driver=webdriver.Chrome(ChromeDriverManager().install(),options=options) 
