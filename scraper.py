@@ -88,12 +88,14 @@ def tamil_nadu_auto_parse_latest_bulletin():
   soup=BeautifulSoup(x,'html.parser');  x=soup('div',attrs={'class':'information'})
   if not x:    print('could not find information div in TN bulletin portal!!');    return
   latest_bulletin_url=x[0]('li')[0]('a')[0]['href']
-  os.system('wget --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "'+latest_bulletin_url+'" -O latest_tn_bulletin.pdf')
-  data,bulletin_date=tamil_nadu_parse_hospitalizations('latest_tn_bulletin.pdf')
+  os.system('wget --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "'+latest_bulletin_url+'"')
+  pdf=[i for i in os.listdir('.') if i.endswith('.pdf')];
+  if pdf: pdf=pdf[0]
+  data,bulletin_date=tamil_nadu_parse_hospitalizations(pdf)
   #check if data for date already exists in csv. if not, then add
   a=open('tamil_nadu.csv');r=csv.reader(a);info=[i for i in r];a.close()
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
-  if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv')
+  if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv '+pdf)
   else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');print(data)
   
 if __name__=='__main__':
