@@ -1,4 +1,4 @@
-Date,general_beds_capacity,general_beds_occupancy,hdu_beds_capacity,hdu_beds_occupancy,icu_beds_capacity,icu_beds_occupancy,ventilator_beds_capacity,ventilator_beds_occupancy
+date,general_beds_capacity,general_beds_occupancy,hdu_beds_capacity,hdu_beds_occupancy,icu_beds_capacity,icu_beds_occupancy,ventilator_beds_capacity,ventilator_beds_occupancy
 2021-12-21,693,3,831,16,693,3,831,16
 2021-12-22,693,4,831,16,693,4,831,16
 2021-12-23,693,3,831,15,693,3,831,15
