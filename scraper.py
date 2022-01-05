@@ -94,15 +94,15 @@ def tamil_nadu_auto_parse_latest_bulletin():
   a=open('tamil_nadu.csv');r=csv.reader(a);info=[i for i in r];a.close()
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv')
-  else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Not writing')
+  else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');print(data)
   
 if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   # ~ for city in ['gbn']:
-  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn']:
-  for city in ['tn']:
+  for city in ['hp','mp','chennai','pune','delhi','gbn','tn']:
+  # ~ for city in ['tn']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
