@@ -97,7 +97,7 @@ def tamil_nadu_auto_parse_latest_bulletin():
   a=open('tamil_nadu.csv');r=csv.reader(a);info=[i for i in r];a.close()
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv '+pdf)
-  else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');print(data)
+  else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');[print(i) for i in data]
  
 def gurugram_bulletin_parser(bulletin=''):
   os.system('pdftotext -layout "'+bulletin+'" t.txt')
