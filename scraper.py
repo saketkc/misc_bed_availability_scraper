@@ -10,7 +10,8 @@ from PIL import Image
 import json
 from bs4 import BeautifulSoup
 
-global_proxy='socks4://157.119.201.231:1080'
+# ~ global_proxy='socks4://157.119.201.231:1080'
+global_proxy='socks4://103.88.221.194:46450'
 
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
