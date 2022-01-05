@@ -10,6 +10,8 @@ from PIL import Image
 import json
 from bs4 import BeautifulSoup
 
+global_proxy='socks4://157.119.201.231:1080'
+
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
   # ~ b=[i for i in open('tmp.txt').readlines() if i]
@@ -163,13 +165,24 @@ def gurugram_auto_parse_latest_bulletin():
   else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');print(row)
   os.system('rm -v "'+pdf+'"')
 
-def mumbai_bulletin_auto_parser(bulletin=''):  
+def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):  
   if not bulletin: #download latest bulletin
     # ~ cmd='wget --no-check-certificate --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
     cmd='curl --max-time 60  -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
     print(cmd);os.system(cmd)
-    bulletin='Dashboard.pdf'
-
+    if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf'
+ 
+  max_tries=100;tries=0
+  if os.path.exists(bulletin): 
+    print('todays bulletin already exists.nothing to download')
+  else:
+    while (not os.path.exists(bulletin)) and (tries<max_tries):    
+      cmd='curl -O  -k -x "'+proxy+'" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
+      print(cmd);    os.system(cmd)
+      os.system('ls -a *.pdf')
+      tries+=1
+   if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf' #download through proxy worked
+      
   #get date
   cmd='pdftotext -x 10 -y 150 -W 200 -H 200 -layout -f 1 -l 1  "'+bulletin+'" t.txt';os.system(cmd)
   b=[i.strip().replace(',','') for i in open('t.txt').readlines() if i.strip()]
