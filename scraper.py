@@ -248,7 +248,7 @@ def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   print('Mumbai data:')
   if date_str not in dates:  a=open('mumbai.csv','a');w=csv.writer(a);w.writerow(row);a.close()
-  else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');
+  else: print('data for '+date_str+' already existed in mumbai.csv. Only printing, not writing');
   print(row)
   
   os.system('rm -v "'+bulletin+'"')
