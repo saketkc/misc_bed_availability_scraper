@@ -12,6 +12,7 @@ import os,requests,time,bs4,datetime,csv;
 from PIL import Image
 import json
 
+  
 if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')

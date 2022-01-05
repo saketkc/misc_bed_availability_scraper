@@ -8,13 +8,101 @@ from selenium.webdriver import ActionChains
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
 import json
+from bs4 import BeautifulSoup
 
+def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
+  cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
+  # ~ b=[i for i in open('tmp.txt').readlines() if i]
+  b=[i for i in open('tmp.txt',encoding='utf-8',errors='ignore').readlines() if i]
+  idx=0;page_count=1;page_range=[];got_start=False
+  bulletin_date=''
+  bd=[i for i in b if 'edia bulletin' in i.lower()]
+  bulletin_date_string='';bulletin_date=''
+  if bd:
+    bulletin_date=bd[0].split('lletin')[1].strip().replace('-','.').replace('/','.')
+    bulletin_date_string=bulletin_date
+    bulletin_date=datetime.datetime.strptime(bulletin_date,'%d.%m.%Y')
+  if return_date: return bulletin_date
+    
+  for i in b:
+    if '\x0c' in i: page_count+=1    
+    if return_beds_page and ('BED VACANCY DETAILS'.lower() in i.lower()) : return page_count
+    
+def tamil_nadu_parse_hospitalizations(bulletin='',use_converted_txt=False,verbose=False):
+  date_str=tamil_nadu_bulletin_parser(bulletin,return_date=True).strftime('%Y-%m-%d')
+  beds_page=tamil_nadu_bulletin_parser(bulletin,return_beds_page=True)   
+  if not use_converted_txt:       
+    #hospitalization page
+    os.system('pdftotext -layout -f %d -l %d %s tmp.txt' %(beds_page,beds_page,bulletin))
+    b=[i.strip() for i in open('tmp.txt').readlines() if i.strip()]
+  else: #if forcing, use tmp2.txt
+    b=[i.strip() for i in open('tmp2.txt').readlines() if i.strip()]
+  start_idx=[i for i in range(len(b)) if 'Ariyalur' in b[i]][0]
+  end_idx=[i for i in range(len(b)) if 'Virudhunagar' in b[i]][0]
+  bb=b[start_idx:end_idx+2][:-1]
+  last_line=[i for i in range(len(b)) if 'grand' in b[i].lower() and 'total' in b[i].lower()][0]
+  if len(b[last_line].split())>3: last_line=b[last_line]
+  else: last_line='Grand Total '+b[last_line+1]
+  data={}
+  for i in bb:
+    try:
+      district,tot_o2,tot_nono2,tot_icu,occ_o2,occ_nono2,occ_icu,vac_o2,vac_nono2,vac_icu,vac_net=i.split()[1:]
+    except:
+      print('unable to parse hosp page details for line: '+i+'in bulletin: '+bulletin+'\nRreutnring')
+      return (i,bb)
+    data[district]=[tot_o2,tot_nono2,tot_icu,occ_o2,occ_nono2,occ_icu]
+  tot_o2,tot_nono2,tot_icu,occ_o2,occ_nono2,occ_icu,vac_o2,vac_nono2,vac_icu,vac_net=last_line.split()[2:]
+  data['All']=[tot_o2,tot_nono2,tot_icu,occ_o2,occ_nono2,occ_icu]
+  # ~ if verbose: pprint.pprint(data)
+  #CCC page
+  os.system('pdftotext -layout -f %d -l %d %s tmp.txt' %(beds_page+1,beds_page+1,bulletin))
+  b=[i.strip() for i in open('tmp.txt').readlines() if i.strip()]
+  start_idx=[i for i in range(len(b)) if 'Ariyalur' in b[i]][0]
+  end_idx=[i for i in range(len(b)) if 'Virudhunagar' in b[i]][0]
+  bb=b[start_idx:end_idx+2][:-1]
+  last_line=[i for i in range(len(b)) if 'grand' in b[i].lower() and 'total' in b[i].lower()][0]
+  if len(b[last_line].split())>4: last_line=b[last_line];
+  else: last_line='Grand Total '+b[last_line+1]
+  for i in bb:
+    district,tot_ccc,occ_ccc,vac_ccc=i.split()[1:]
+    data[district].extend([tot_ccc,occ_ccc])
+  # ~ print(last_line)
+  tot_ccc,occ_ccc,vac_ccc=last_line.split()[2:]
+  data['All'].extend([tot_ccc,occ_ccc])
+  if verbose: pprint.pprint(data)
+  data2=[]
+  for district in data:
+    if not district=='All':
+      x=data[district]
+      data2.append([date_str,district,x[0],x[1],x[2],x[6],x[3],x[4],x[5],x[7]])
+  x=data['All'];data2.append([date_str,'All',x[0],x[1],x[2],x[6],x[3],x[4],x[5],x[7]])
+  a=open('hosp.csv','a')
+  w=csv.writer(a)
+  for i in data2: w.writerow(i)
+  a.close()
+  return (data2,date_str)
+  
+def tamil_nadu_auto_parse_latest_bulletin():
+  print('Downloading TN bulletin portal webpage')
+  x=os.popen('curl -k https://stopcorona.tn.gov.in/daily-bulletin/').read()
+  soup=BeautifulSoup(x,'html.parser');  x=soup('div',attrs={'class':'information'})
+  if not x:    print('could not find information div in TN bulletin portal!!');    return
+  latest_bulletin_url=x[0]('li')[0]('a')[0]['href']
+  os.system('wget --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "'+latest_bulletin_url+'" -O latest_tn_bulletin.pdf')
+  data,bulletin_date=tamil_nadu_parse_hospitalizations('latest_tn_bulletin.pdf')
+  #check if data for date already exists in csv. if not, then add
+  a=open('tamil_nadu.csv');r=csv.reader(a);info=[i for i in r];a.close()
+  dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
+  if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv')
+  else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Not writing')
+  
 if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   # ~ for city in ['gbn']:
-  for city in ['hp','mp','chennai','pune','delhi','gbn']:
+  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn']:
+  for city in ['tn']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -35,8 +123,10 @@ if __name__=='__main__':
         print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
       else:
         print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
+    elif city=='tn':
+      tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gbn':
- #check if data for given date already exists in csv. Update only if data doesn't exist
+      #check if data for given date already exists in csv. Update only if data doesn't exist
       a=open('data.gbn.csv');r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
       
