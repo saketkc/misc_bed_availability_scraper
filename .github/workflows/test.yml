@@ -36,10 +36,10 @@ jobs:
         pip install -r requirements.txt
     #~ - name: Setup upterm session
       #~ uses: lhotari/action-upterm@v1
-    - name: Scrape Chennai beds data
+    - name: Scrape city beds data
       run: |
         python scraper.py
-    - name: Commit modified data.chennai.csv
+    - name: Commit modified csv files
       run: |
         git config --global user.name 'Your Name'
         git config --global user.email 'your-username@users.noreply.github.com'
