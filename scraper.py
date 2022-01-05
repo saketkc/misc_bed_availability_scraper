@@ -162,12 +162,88 @@ def gurugram_auto_parse_latest_bulletin():
   if bulletin_date not in dates:  a=open('gurugram.csv','a');w=csv.writer(a);w.writerow(row);a.close()
   else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');print(row)
   os.system('rm -v "'+pdf+'"')
+
+def mumbai_bulletin_auto_parser(bulletin=''):  
+  if not bulletin: #download latest bulletin
+    # ~ cmd='wget --no-check-certificate --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
+    cmd='curl -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
+    print(cmd);os.system(cmd)
+    bulletin='Dashboard.pdf'
+
+  #get date
+  cmd='pdftotext -x 10 -y 150 -W 200 -H 200 -layout -f 1 -l 1  "'+bulletin+'" t.txt';os.system(cmd)
+  b=[i.strip().replace(',','') for i in open('t.txt').readlines() if i.strip()]
+
+  date=[i.replace(',','') for i in b if '2021' in i or '2022' in i]
+  if not date: print('could not get date from '+bulletin)
+  else: date=datetime.datetime.strptime(date[0],'%b %d %Y');date_str=date.strftime('%Y-%m-%d')
+  
+  #get cases,tests,symp etc
+  cmd='pdftotext -x 0 -y 100 -W 220 -H 320 -layout -f 2 -l 2 "'+bulletin+'" t.txt';os.system(cmd)
+  b=[i.strip().replace(',','') for i in open('t.txt').readlines() if i.strip()]
+  
+  cases=[i for i in b if 'positive' in i.lower()]
+  if not cases: print('could not get cases from '+bulletin)
+  else: cases=int(cases[0].split()[-1].strip())
+  
+  active=[i for i in b if 'active' in i.lower()]
+  if not active: print('could not get actives from '+bulletin)
+  else: active=int(active[0].split()[-1].strip())
+  
+  asymp=[i for i in b if 'Asymptomatic' in i]
+  if not asymp: print('could not get asymp from '+bulletin)
+  else: asymp=int(asymp[0].split()[-1].strip())
+  
+  symp=[i for i in b if 'Symptomatic' in i]
+  if not symp: print('could not get symp from '+bulletin)
+  else: symp=int(symp[0].split()[-1].strip())
+  
+  critical=[i for i in b if 'critical' in i.lower()]
+  if not critical: print('could not get criticals from '+bulletin)
+  else: critical=int(critical[0].split()[-1].strip())
+  
+  tests=[i for i in b if 'tests' in i.lower()]
+  if not tests: print('could not get tests from '+bulletin)
+  else: tests=int(tests[0].split()[-1].strip())
+  
+  #get hospital occupancy
+  cmd='pdftotext -x 340 -y 100 -W 95 -H 340 -layout -f 2 -l 2 "'+bulletin+'" t.txt';os.system(cmd)
+  b=[i.strip().replace(',','') for i in open('t.txt').readlines() if i.strip()]
+  
+  if not ('2021' in b[0] or '2022' in b[0]): #means date wasn't at top, parsed wrong
+    print('could not parse occupancy numbers')
+  else:
+    try:
+      bc,bo,ba,dc,do,da,oc,oo,oa,ic,io,ia,vc,vo,va=b[1:]
+    except:
+      print('failed to get occupancy split')
+      return b
+    gen_beds_cap=int(bc);gen_beds_occupancy=int(bo)
+    o2_cap=int(oc);o2_occupancy=int(oo)
+    icu_cap=int(ic);icu_occupancy=int(io)
+    vent_cap=int(vc);vent_occupancy=int(vo)
+ 
+  row=(date_str,cases,tests,o2_cap,icu_cap,vent_cap,o2_occupancy,icu_occupancy,vent_occupancy,gen_beds_cap,gen_beds_occupancy,active,symp,asymp,critical)
+  # ~ a=open('tmp.csv','a');w=csv.writer(a);w.writerow(row);a.close()
+  
+   #check if data for date already exists in csv. if not, then add
+  a=open('mumbai.csv');r=csv.reader(a);info=[i for i in r];a.close()
+  dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
+  print('Mumbai data:')
+  if date_str not in dates:  a=open('mumbai.csv','a');w=csv.writer(a);w.writerow(row);a.close()
+  else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');
+  print(row)
+  
+  os.system('rm -v "'+bulletin+'"')
+  # ~ return b
+  return row
+
 if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn']:
-  # ~ for city in ['gurugram']:
+  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn']:
+  for city in ['mumbai']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -192,6 +268,8 @@ if __name__=='__main__':
       tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gurugram':
       gurugram_auto_parse_latest_bulletin()
+    elif city=='mumbai':
+      mumbai_bulletin_auto_parser()
     elif city=='gbn':
       #check if data for given date already exists in csv. Update only if data doesn't exist
       a=open('data.gbn.csv');r=csv.reader(a);info=[i for i in r];a.close()
