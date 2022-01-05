@@ -98,14 +98,76 @@ def tamil_nadu_auto_parse_latest_bulletin():
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv '+pdf)
   else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');print(data)
+ 
+def gurugram_bulletin_parser(bulletin=''):
+  os.system('pdftotext -layout "'+bulletin+'" t.txt')
+  b=[i.strip() for i in open('t.txt').readlines() if i.strip()]
+ 
+  x=[i for i in b if 'Dated' in i]
+  if not x: print('could not get date in '+bulletin);return  
+  x=x[0].split('Dated')[-1].strip().split()[-1]
+  x=x.replace('-','/').replace('/04/10/2021','04/10/2021')
+  date=datetime.datetime.strptime(x,'%d/%m/%Y').strftime('%Y-%m-%d')
+
+ 
+  x=[i for i in b if 'found Negative' in i]
+  x2=[i for i in b if 'found Positive' in i]
+  if not x: print('could not get tests in '+bulletin);return
+  tot_tests_to_date=int(x[0].split()[-1].strip())+int(x2[0].split()[-1].strip())
+ 
+  x=[i for i in b if 'New Cases' in i]
+  if not x: print('could not get new cases in '+bulletin);return
+  cases=int(x[0].split()[-1].strip())
   
+  # ~ tpr='%.2f' %(100*(float(cases)/tests));tpr=float(tpr)
+  
+  x=[i for i in b if '(DCH )' in i]
+  if not x: #some 2021 bulletins report combined value
+    x=[i for i in b if '(DCH +DCHC)' in i]
+    if not x: print('could not get DHC occupancy in '+bulletin);return
+    dhc_dchc_occupied=int(x[0].split()[-1].strip())
+  else:
+    dhc_dchc_occupied=int(x[0].split()[-1].strip())  
+    x=[i for i in b if '(DCHC)' in i]
+    if not x: print('could not get DCHC occupancy in '+bulletin);return
+    # ~ dchc_occupied=int(x[0].split()[-1].strip())
+    dhc_dchc_occupied+=int(x[0].split()[-1].strip())
+  
+  x=[i for i in b if '(DCCC)' in i]
+  if not x: print('could not get DCCC occupancy in '+bulletin);return
+  dccc_occupied=int(x[0].split()[-1].strip())
+  
+  x=[i for i in b if 'Home Isolation' in i]
+  if not x: print('could not get Home isolation numbers in '+bulletin);return
+  home_isolation=int(x[0].split()[-1].strip())
+  
+  # ~ return (date,cases,tot_tests_to_date,dhc_occupied,dchc_occupied,dccc_occupied,home_isolation)
+  return (date,cases,tot_tests_to_date,dhc_dchc_occupied,dccc_occupied,home_isolation)
+  
+def gurugram_auto_parse_latest_bulletin():
+  print('Downloading gurugram bulletin portal webpage')
+  x=os.popen('curl -k https://gurugram.gov.in/health-bulletin/').read()
+  soup=BeautifulSoup(x,'html.parser');x=soup('div',attrs={'class':'status-publish'})
+  if not len(x)>0: print('cold not find div from gurugram bulletin portal!!');return
+  latest_bulletin_url=x[0]('li')[0]('a')[0]['href']
+  cmd='wget --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "'+latest_bulletin_url+'"'
+  print(cmd);os.system(cmd)
+  pdf=[i for i in os.listdir('.') if i.endswith('.pdf')];
+  if pdf: pdf=pdf[0]
+  row=gurugram_bulletin_parser(pdf);bulletin_date=row[0]
+  
+  #check if data for date already exists in csv. if not, then add
+  a=open('gurugram.csv');r=csv.reader(a);info=[i for i in r];a.close()
+  dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
+  if bulletin_date not in dates:  a=open('gurugram.csv','a');w=csv.writer(a);w.writerow(row);a.close()
+  else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');print(row)
+  os.system('rm -v "'+pdf+'"')
 if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['gbn']:
-  for city in ['hp','mp','chennai','pune','delhi','gbn','tn']:
-  # ~ for city in ['tn']:
+  for city in ['hp','mp','chennai','pune','delhi','gbn','tn','gurugram']:
+  # ~ for city in ['gurugram']:
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -128,6 +190,8 @@ if __name__=='__main__':
         print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
     elif city=='tn':
       tamil_nadu_auto_parse_latest_bulletin()
+    elif city=='gurugram':
+      gurugram_auto_parse_latest_bulletin()
     elif city=='gbn':
       #check if data for given date already exists in csv. Update only if data doesn't exist
       a=open('data.gbn.csv');r=csv.reader(a);info=[i for i in r];a.close()
