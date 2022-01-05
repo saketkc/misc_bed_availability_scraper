@@ -179,6 +179,8 @@ def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):
     while (not os.path.exists(bulletin)) and (tries<max_tries):    
       cmd='curl -O  -k -x "'+proxy+'" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
       print(cmd);    os.system(cmd)
+      if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf' #download through proxy worked
+
       os.system('ls -a *.pdf')
       tries+=1
     if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf' #download through proxy worked
