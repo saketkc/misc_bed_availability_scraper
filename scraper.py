@@ -87,7 +87,7 @@ def tamil_nadu_auto_parse_latest_bulletin():
   x=os.popen('curl -k https://stopcorona.tn.gov.in/daily-bulletin/').read()
   soup=BeautifulSoup(x,'html.parser');  x=soup('div',attrs={'class':'information'})
   if not x:    print('could not find information div in TN bulletin portal!!');    return
-  latest_bulletin_url=x[0]('li')[0]('a')[0]['href']
+  latest_bulletin_url=x[0]('li')[0]('a')[0]['href'].replace('http://','https://')
   cmd='wget --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "'+latest_bulletin_url+'"'
   print(cmd);os.system(cmd)
   pdf=[i for i in os.listdir('.') if i.endswith('.pdf')];
