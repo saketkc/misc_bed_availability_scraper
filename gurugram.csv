@@ -1,4 +1,4 @@
-Date,new_cases,tot_tests_to_date,dhc_dchc_occupied,dccc_occupied,home_isolation
+date,new_cases,tot_tests_to_date,dhc_dchc_occupied,dccc_occupied,home_isolation
 2020-08-01,99,103818,77,111,731
 2020-08-02,79,105708,89,109,685
 2020-08-03,43,106925,72,106,648
