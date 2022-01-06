@@ -259,8 +259,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai']:
-  for city in ['uttarakhand']:
+  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala']:
+  for city in ['kerala']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -390,6 +390,25 @@ if __name__=='__main__':
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
       print(city+':')
       print(row)
+    elif city=='kerala':
+      x=os.popen('curl -k https://covid19jagratha.kerala.nic.in/home/addHospitalDashBoard').read()
+      soup=BeautifulSoup(x,'html.parser');
+      
+      n=soup('div',attrs={'class':'box'})[1]
+      occupied_normal,tot_normal=n('p')[0].text.replace(n('label')[0].text,'').strip().split('/')
+      
+      n=soup('div',attrs={'class':'box'})[2]
+      occupied_icu,tot_icu=n('p')[0].text.replace(n('label')[0].text,'').strip().split('/')
+      
+      n=soup('div',attrs={'class':'box'})[3]
+      occupied_vent,tot_vent=n('p')[0].text.replace(n('label')[0].text,'').strip().split('/')
+      
+      n=soup('div',attrs={'class':'box'})[4]
+      occupied_o2,tot_o2=n('p')[0].text.replace(n('label')[0].text,'').strip().split('/')
+      row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':')
+      print(row)
+      
     elif city=='uttarakhand':
       x=os.popen('curl -k https://covid19.uk.gov.in/bedssummary.aspx').read()
       soup=BeautifulSoup(x,'html.parser');
@@ -516,7 +535,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh','uttarakhand']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
