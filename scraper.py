@@ -260,8 +260,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
-  # ~ for city in ['bengaluru']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara']:
+  # ~ for city in ['ct']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -352,6 +352,53 @@ if __name__=='__main__':
       tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gurugram':
       gurugram_auto_parse_latest_bulletin()
+    elif city=='gandhinagar':
+      x=os.popen('curl -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx').read()
+      soup=BeautifulSoup(x,'html.parser')
+      x1,x2,x3,vt,vo,vv,it,io,iv,ot,oo,ov,nt,no,nv=[i.text for i in  soup('table')[0]('span') if i.has_attr('id') and i['id'].startswith('lb')]
+      row=(date_str,nt,ot,it,vt,no,oo,io,vo)
+      print(city+':');      print(row)
+
+    elif city=='vadodara':
+      x=os.popen('curl -# -k  https://vmc.gov.in/covid19vadodaraapp/Default.aspx').read()
+      soup=BeautifulSoup(x,'html.parser')
+      x1,x2,x3,vt,vo,vv,it,io,iv,ot,oo,ov,nt,no,nv,x5=[i.text for i in  soup('table')[0]('span') if i.has_attr('id') and i['id'].startswith('lb')]
+      row=(date_str,nt,ot,it,vt,no,oo,io,vo)
+      print(city+':');      print(row)
+    elif city=='ct':
+      pass
+    elif city=='nashik':
+      x=os.popen('curl -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary').read()
+      soup=BeautifulSoup(x,'html.parser')
+      x1,x2,x3,x4,nt,nv,ot,ov,it,iv,vt,vv=[i.text.strip() for i in soup('tfoot')[0]('th')]
+      no=int(nt)-int(nv)
+      oo=int(ot)-int(ov)
+      io=int(it)-int(iv)
+      vo=int(vt)-int(vv)
+      row=(date_str,nt,ot,it,vt,no,oo,io,vo)
+      print(city+':');      print(row)
+    elif city=='nagpur':
+      x=os.popen('curl -# -k https://nsscdcl.org/covidbeds/').read()
+      soup=BeautifulSoup(x,'html.parser')
+      
+      oa=soup('div',attrs={'class':'small-box'})[0]('button')[0].text.split(':')[1].strip()
+      oo=soup('div',attrs={'class':'small-box'})[0]('label')[0].text.split(':')[1].strip()
+      oc=int(oa)+int(oo)
+
+      na=soup('div',attrs={'class':'small-box'})[1]('button')[0].text.split(':')[1].strip()
+      no=soup('div',attrs={'class':'small-box'})[1]('label')[0].text.split(':')[1].strip()
+      nc=int(na)+int(no)
+
+      ia=soup('div',attrs={'class':'small-box'})[2]('button')[0].text.split(':')[1].strip()
+      io=soup('div',attrs={'class':'small-box'})[2]('label')[0].text.split(':')[1].strip()
+      ic=int(ia)+int(io)
+
+      va=soup('div',attrs={'class':'small-box'})[3]('button')[0].text.split(':')[1].strip()
+      vo=soup('div',attrs={'class':'small-box'})[3]('label')[0].text.split(':')[1].strip()
+      vc=int(va)+int(vo)
+
+      row=(date_str,nc,oc,ic,vc,no,oo,io,vo)
+      print(city+':');      print(row)
     elif city=='mumbai':
       mumbai_bulletin_auto_parser()
     elif city=='gbn':
@@ -615,7 +662,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
