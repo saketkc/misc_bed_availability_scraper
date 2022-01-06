@@ -8,7 +8,7 @@ from tabula import read_pdf
 
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
-import json,time
+import json,time,re
 from bs4 import BeautifulSoup
 
 # ~ global_proxy='socks4://157.119.201.231:1080'
@@ -262,7 +262,7 @@ if __name__=='__main__':
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara']:
-  # ~ for city in ['ct']:
+  # ~ for city in ['jammu']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -329,26 +329,6 @@ if __name__=='__main__':
         a=open('data.bengaluru.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.bengaluru.csv: '+info) 
         
-    # ~ if city=='bengaluru':
-      # ~ #BENGALURU
-      # ~ options=webdriver.ChromeOptions();
-      # ~ options.add_argument('--ignore-certificate-errors');
-      # ~ options.add_argument('--disable-gpu');
-      # ~ options.add_argument("--headless")
-      # ~ options.add_argument("--window-size=1366,768")
-      # ~ driver=webdriver.Chrome(chrome_options=options)  
-      # ~ driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
-      # ~ driver.get('https://www.powerbi.com/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
-      # ~ driver.get('20.186.65.100/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
-      # ~ time.sleep(10)
-      # ~ date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
-      # ~ if not os.path.exists('images/'+date_str+'.png'):
-        # ~ driver.save_screenshot('images/'+date_str+'.png')
-        # ~ img=Image.open('images/'+date_str+'.png')
-        # ~ img.save('images/'+date_str+'.webp')
-        # ~ print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
-      # ~ else:
-        # ~ print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
     elif city=='tn':
       tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gurugram':
@@ -386,6 +366,29 @@ if __name__=='__main__':
       io=int(it)-int(iv)
       vo=int(vt)-int(vv)
       row=(date_str,nt,ot,it,vt,no,oo,io,vo)
+      print(city+':');      print(row)
+    elif city=='jammu':
+      x=os.popen('curl --max-time 30 -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU').read()
+      tries=0
+      while (not x) and tries<10: 
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU').read()
+      soup=BeautifulSoup(x,'html.parser')
+      jammu_hospitals=['https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609382b4f64c7a2d446721ec','https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609381cbb1c6502bfe8c3c5f','https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60938338f64c7a2d446721ee','https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/6093826ef64c7a2d446721eb','https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609a4aa4dc9ca218af2fa243','https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60bb02f17b6808683a6284e0']
+      tnc=tic=tno=too=tio=0
+      for hospital in jammu_hospitals:
+        x=os.popen('curl --max-time 30 -# -k '+hospital).read()
+        tries=0
+        while (not x) and tries<10: 
+          x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k '+hospital).read()
+        try:
+          x1,x2,x3,nc,nv,ic,iv,oo=[i('td')[1].text for i in soup('table')[0]('tr') if len(i('td'))>1]
+          no=int(nc)-int(nv);tno+=no;tnc+=int(nc)
+          io=int(ic)-int(iv);tio+=io;tic+=int(ic)
+        except:
+          print('failed for '+hospital)
+          print(soup)
+        
+      row=(date_str,tnc,tic,tno,too,tio)
       print(city+':');      print(row)
     elif city=='nagpur':
       x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
