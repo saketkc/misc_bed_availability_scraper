@@ -262,7 +262,7 @@ if __name__=='__main__':
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara']:
-  # ~ for city in ['jammu']:
+  # ~ for city in ['wb']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -354,6 +354,16 @@ if __name__=='__main__':
       print(city+':');      print(row)
     elif city=='ct':
       pass
+    elif city=='wb':
+      x=os.popen('curl --max-time 15 -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx').read()
+      tries=0
+      while (not x) and tries<10: 
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx').read()
+      soup=BeautifulSoup(x,'html.parser')
+      x1,nc,nv,x2=[i.text.strip() for i in  soup('span',attrs={'class':'counter'})]
+      no=int(nc)-int(nv)
+      row=(date_str,nc,no)
+      print(city+':');      print(row)
     elif city=='nashik':
       x=os.popen('curl --max-time 15 -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary').read()
       tries=0
@@ -678,7 +688,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
