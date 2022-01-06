@@ -260,7 +260,7 @@ if __name__=='__main__':
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai']:
-  for city in ['chandigarh']:
+  for city in ['uttarakhand']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -390,6 +390,30 @@ if __name__=='__main__':
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
       print(city+':')
       print(row)
+    elif city=='uttarakhand':
+      x=os.popen('curl -k https://covid19.uk.gov.in/bedssummary.aspx').read()
+      soup=BeautifulSoup(x,'html.parser');
+      
+      n=soup('div',attrs={'id':'ContentPlaceHolder1_divIsolation'})[0]
+      xz1,tot_normal,xz2,vacant_normal=[i.text for i in n('span')];
+      occupied_normal=int(tot_normal)-int(vacant_normal)
+      
+      n=soup('div',attrs={'id':'ContentPlaceHolder1_divOx2'})[0]
+      xz1,tot_o2,xz2,vacant_o2=[i.text for i in n('span')];
+      occupied_o2=int(tot_o2)-int(vacant_o2)
+      
+      n=soup('div',attrs={'id':'ContentPlaceHolder1_divICU'})[0]
+      xz1,tot_icu,xz2,vacant_icu=[i.text for i in n('span')];
+      occupied_icu=int(tot_icu)-int(vacant_icu)
+      
+      n=soup('div',attrs={'id':'ContentPlaceHolder1_div1'})[0]
+      xz1,tot_vent,xz2,vacant_vent=[i.text for i in n('span')];
+      occupied_vent=int(tot_vent)-int(vacant_vent)
+      
+      row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':')
+      print(row)
+      
     elif city=='chandigarh':
       x=os.popen('curl -k http://chdcovid19.in/chdcovidbed19/index.php/home/stats').read()
       soup=BeautifulSoup(x,'html.parser');
@@ -492,7 +516,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
