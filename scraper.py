@@ -7,7 +7,7 @@ from selenium.webdriver import ActionChains
 
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
-import json
+import json,time
 from bs4 import BeautifulSoup
 
 # ~ global_proxy='socks4://157.119.201.231:1080'
@@ -259,8 +259,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala']:
-  for city in ['kerala']:
+  for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
+  # ~ for city in ['telangana']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -376,8 +376,7 @@ if __name__=='__main__':
             print('could not get data from https://coronabeds.jantasamvad.org/covid-info.js')
 
     elif city=='pune':
-      x=os.popen('curl -k https://divcommpunecovid.com/ccsbeddashboard/hsr').read()
-      from bs4 import BeautifulSoup
+      x=os.popen('curl -k https://divcommpunecovid.com/ccsbeddashboard/hsr').read()      
       soup=BeautifulSoup(x,'html.parser');
       xx=soup('legend')[1].parent
       xx=xx('table')[0]
@@ -388,6 +387,23 @@ if __name__=='__main__':
       occupied_icu=int(tot_icu)-int(vacant_icu)
       occupied_vent=int(tot_vent)-int(vacant_vent)
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':')
+      print(row)
+    elif city=='ap':
+      br=webdriver.PhantomJS();br.get('http://dashboard.covid19.ap.gov.in/ims/hospbed_reports//');time.sleep(3)
+      x=br.page_source;      soup=BeautifulSoup(x,'html.parser');
+      xyz,number_of_hospitals,tot_icu,occupied_icu,vacant_icu,tot_o2,occupied_o2,vacant_o2,tot_normal,occupied_normal,vacant_normal,tot_vent,occupied_vent,vacant_vent,=[i.text for i in soup('tr')[-1]('td')]
+      row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':')
+      print(row)
+    elif city=='telangana':
+      x=os.popen('curl -k http://164.100.112.24/SpringMVC/Hospital_Beds_Statistic_Bulletin_citizen.htm').read()
+      soup=BeautifulSoup(x,'html.parser')
+      try:
+        xyz,tot_normal,occupied_normal,vacant_normal,tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu,a1,a2,a3=[i.text for i in soup('tr')[-1]('th')]
+      except:
+        print('could not unpack '+str([i.text for i in soup('tr')[-1]('th')]))
+      row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
       print(city+':')
       print(row)
     elif city=='kerala':
@@ -452,7 +468,6 @@ if __name__=='__main__':
       print(city+' : '+str(row))
     elif city=='hp':
       x=os.popen('curl -k https://covidcapacity.hp.gov.in/index.php').read()
-      from bs4 import BeautifulSoup
       soup=BeautifulSoup(x,'html.parser');
       xx=soup('a',attrs={'id':'oxygenbedmodel'})[0]
       tot_o2=int(xx.parent.parent('td')[0].text)
@@ -467,7 +482,6 @@ if __name__=='__main__':
       print(city+':');print(row)
     elif city=='mp':
       x=os.popen('curl -k http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-dashboard/').read()
-      from bs4 import BeautifulSoup
       soup=BeautifulSoup(x,'html.parser');
       xx=soup('a',attrs={'href':'http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-details'})
       tot_normal,occupied_normal,vacant_normal,tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu=[i.text for i in xx if i.text.isnumeric()]
@@ -535,7 +549,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
