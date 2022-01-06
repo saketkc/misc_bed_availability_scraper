@@ -260,8 +260,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
-  for city in ['bengaluru']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
+  # ~ for city in ['bengaluru']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -291,7 +291,7 @@ if __name__=='__main__':
       bulletin_date=datetime.datetime.strptime(date_line[0].split('/')[-2].strip(),'%d.%m.%Y').strftime('%Y-%m-%d')
   
       # print(text)
-      tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=12)
+      tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=12,silent=True)
       df=tables[0]
       
       results=[]
