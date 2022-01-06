@@ -259,29 +259,84 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
   # ~ for city in ['telangana']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
-      options=webdriver.ChromeOptions();
-      options.add_argument('--ignore-certificate-errors');
-      options.add_argument('--disable-gpu');
-      options.add_argument("--headless")
-      options.add_argument("--window-size=1366,768")
-      driver=webdriver.Chrome(chrome_options=options)  
-      driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
-      driver.get('https://www.powerbi.com/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
-      driver.get('20.186.65.100/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
-      time.sleep(10)
-      date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
-      if not os.path.exists('images/'+date_str+'.png'):
-        driver.save_screenshot('images/'+date_str+'.png')
-        img=Image.open('images/'+date_str+'.png')
-        img.save('images/'+date_str+'.webp')
-        print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
+
+      url = "https://apps.bbmpgov.in/Covid19/en/mediabulletin.php"
+
+      response = requests.get(url)
+      soup = BeautifulSoup(response.text, 'html.parser')
+      links = soup.find_all('a')
+        
+      for link in links:
+          if ('.pdf' in link.get('href', [])):
+              print("Downloading pdf...")
+
+              l = "https://apps.bbmpgov.in/Covid19/en/"+link.get('href').replace(" ","%20")
+              print(l)
+              response = requests.get(l)
+              pdf = open("BLR_"+str(date_str)+".pdf", 'wb')
+              pdf.write(response.content)
+              pdf.close()
+              break
+  
+      # print(text)
+      tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=12)
+      df=tables[0]
+      
+      results=[]
+      results.append(df.iloc[14][-2].split())
+      results.append(df.iloc[14][-1].split())
+      print(results)
+
+      general_available = results[1][0]
+      general_admitted = results[0][0]
+
+      hdu_available = results[1][1]
+      hdu_admitted = results[0][1]
+
+      icu_available = results[1][2]
+      icu_admitted = results[0][2]
+
+      ventilator_available = results[1][3]
+      ventilator_admitted = results[0][3]
+
+
+      a=open('data.bengaluru.csv');r=csv.reader(a);info=[i for i in r];a.close()
+      dates=list(set([i[0] for i in info[1:]]));dates.sort()
+      
+      if date_str in dates: 
+        # ~ dont_update_data_csv=True
+        print('----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
       else:
-        print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
+        #write to file
+        info=', '.join((date_str,str(general_available),str(general_admitted),str(hdu_available),str(hdu_admitted),str(icu_available),str(icu_admitted),str(ventilator_available),str(ventilator_admitted)))        
+        a=open('data.bengaluru.csv','a');a.write(info+'\n');a.close()
+        print('Appended to data.bengaluru.csv: '+info) 
+        
+    # ~ if city=='bengaluru':
+      # ~ #BENGALURU
+      # ~ options=webdriver.ChromeOptions();
+      # ~ options.add_argument('--ignore-certificate-errors');
+      # ~ options.add_argument('--disable-gpu');
+      # ~ options.add_argument("--headless")
+      # ~ options.add_argument("--window-size=1366,768")
+      # ~ driver=webdriver.Chrome(chrome_options=options)  
+      # ~ driver.get('https://apps.bbmpgov.in/Covid19/en/bedstatus.php')
+      # ~ driver.get('https://www.powerbi.com/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
+      # ~ driver.get('20.186.65.100/view?r=eyJrIjoiOTcyM2JkNTQtYzA5ZS00MWI4LWIxN2UtZjY1NjFhYmFjZDBjIiwidCI6ImQ1ZmE3M2I0LTE1MzgtNGRjZi1hZGIwLTA3NGEzNzg4MmRkNiJ9')
+      # ~ time.sleep(10)
+      # ~ date=datetime.datetime.now();date_str=date.strftime('%d_%m_%Y')
+      # ~ if not os.path.exists('images/'+date_str+'.png'):
+        # ~ driver.save_screenshot('images/'+date_str+'.png')
+        # ~ img=Image.open('images/'+date_str+'.png')
+        # ~ img.save('images/'+date_str+'.webp')
+        # ~ print('saved screenshot of bengaluru beds availability dashboard to %s' %('images/'+date_str+'.webp'))
+      # ~ else:
+        # ~ print('Image: %s already existed. Skipping!!' %('images/'+date_str+'.png'))
     elif city=='tn':
       tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gurugram':
