@@ -103,6 +103,7 @@ def tamil_nadu_auto_parse_latest_bulletin():
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   if bulletin_date not in dates:  os.system('cat hosp.csv >> tamil_nadu.csv && rm -v hosp.csv '+pdf)
   else: print('data for '+bulletin_date+' already existed in tamil_nadu.csv. Only printing, not writing');[print(i) for i in data]
+  os.system('rm -vf *.pdf')
  
 def gurugram_bulletin_parser(bulletin=''):
   os.system('pdftotext -layout "'+bulletin+'" t.txt')
@@ -166,7 +167,7 @@ def gurugram_auto_parse_latest_bulletin():
   dates=list(set([i[0] for i in info[1:] if len(i)>0]));dates.sort()
   if bulletin_date not in dates:  a=open('gurugram.csv','a');w=csv.writer(a);w.writerow(row);a.close()
   else: print('data for '+bulletin_date+' already existed in gurugram.csv. Only printing, not writing');print(row)
-  os.system('rm -v "'+pdf+'"')
+  os.system('rm -v "'+pdf+'" *.pdf')
 
 def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):  
   if not bulletin: #download latest bulletin
@@ -317,7 +318,7 @@ if __name__=='__main__':
       
       info=', '.join((bulletin_date,str(general_available),str(general_admitted),str(hdu_available),str(hdu_admitted),str(icu_available),str(icu_admitted),str(ventilator_available),str(ventilator_admitted)))        
       
-      os.system('rm -v BLR_'+str(date_str)+'.pdf')
+      os.system('rm -vf BLR_'+str(date_str)+'.pdf *.pdf')
       if bulletin_date in dates: 
         # ~ dont_update_data_csv=True
         print('----------\n\nData for %s already exists in data.bengaluru.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
