@@ -171,7 +171,7 @@ def gurugram_auto_parse_latest_bulletin():
 def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):  
   if not bulletin: #download latest bulletin
     # ~ cmd='wget --no-check-certificate --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
-    cmd='curl -# --max-time 30  -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
+    cmd='curl -# --max-time 15  -O -# -k -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36" "https://stopcoronavirus.mcgm.gov.in/assets/docs/Dashboard.pdf"'
     print(cmd);os.system(cmd)
     if os.path.exists('Dashboard.pdf'): bulletin='Dashboard.pdf'
  
@@ -353,14 +353,20 @@ if __name__=='__main__':
     elif city=='gurugram':
       gurugram_auto_parse_latest_bulletin()
     elif city=='gandhinagar':
-      x=os.popen('curl -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx').read()
+      x=os.popen('curl --max-time 20 -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx').read()
+      tries=0
+      while (not x) and tries<10: 
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx').read()
       soup=BeautifulSoup(x,'html.parser')
       x1,x2,x3,vt,vo,vv,it,io,iv,ot,oo,ov,nt,no,nv=[i.text for i in  soup('table')[0]('span') if i.has_attr('id') and i['id'].startswith('lb')]
       row=(date_str,nt,ot,it,vt,no,oo,io,vo)
       print(city+':');      print(row)
 
     elif city=='vadodara':
-      x=os.popen('curl -# -k  https://vmc.gov.in/covid19vadodaraapp/Default.aspx').read()
+      x=os.popen('curl --max-time 20 -# -k  https://vmc.gov.in/covid19vadodaraapp/Default.aspx').read()
+      tries=0
+      while (not x) and tries<10: 
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://vmc.gov.in/covid19vadodaraapp/Default.aspx').read()
       soup=BeautifulSoup(x,'html.parser')
       x1,x2,x3,vt,vo,vv,it,io,iv,ot,oo,ov,nt,no,nv,x5=[i.text for i in  soup('table')[0]('span') if i.has_attr('id') and i['id'].startswith('lb')]
       row=(date_str,nt,ot,it,vt,no,oo,io,vo)
@@ -368,7 +374,10 @@ if __name__=='__main__':
     elif city=='ct':
       pass
     elif city=='nashik':
-      x=os.popen('curl -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary').read()
+      x=os.popen('curl --max-time 15 -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary').read()
+      tries=0
+      while (not x) and tries<10: 
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary').read()
       soup=BeautifulSoup(x,'html.parser')
       x1,x2,x3,x4,nt,nv,ot,ov,it,iv,vt,vv=[i.text.strip() for i in soup('tfoot')[0]('th')]
       no=int(nt)-int(nv)
@@ -380,8 +389,7 @@ if __name__=='__main__':
     elif city=='nagpur':
       x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
       tries=0
-      while (not x) and tries<10: #try proxy
-        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
+      while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
         
       soup=BeautifulSoup(x,'html.parser')
       
