@@ -260,8 +260,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
-  # ~ for city in ['telangana']:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana']:
+  for city in ['bengaluru']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -283,6 +283,12 @@ if __name__=='__main__':
               pdf.write(response.content)
               pdf.close()
               break
+      #get date from bulletin
+      os.system('pdftotext -layout -f 1 -l 1 BLR_'+str(date_str)+'.pdf t.txt')
+      b=[i.strip() for i in open('t.txt').readlines() if i.strip()]
+      date_line=[i for i in b if 'WAR ROOM'.lower() in i.lower()]
+      if not date_line: print('could not get date from bengaluru buletin BLR_'+str(date_str)+'.pdf !!');sys.exit(1)
+      bulletin_date=datetime.datetime.strptime(date_line[0].split('/')[-2].strip(),'%d.%m.%Y').strftime('%Y-%m-%d')
   
       # print(text)
       tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=12)
@@ -290,8 +296,8 @@ if __name__=='__main__':
       
       results=[]
       results.append(df.iloc[14][-2].split())
-      results.append(df.iloc[14][-1].split())
-      print(results)
+      results.append(df.iloc[14][-3].split())
+      # ~ print(results)
 
       general_available = results[1][0]
       general_admitted = results[0][0]
@@ -309,12 +315,15 @@ if __name__=='__main__':
       a=open('data.bengaluru.csv');r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
       
-      if date_str in dates: 
+      info=', '.join((bulletin_date,str(general_available),str(general_admitted),str(hdu_available),str(hdu_admitted),str(icu_available),str(icu_admitted),str(ventilator_available),str(ventilator_admitted)))        
+      
+      if bulletin_date in dates: 
         # ~ dont_update_data_csv=True
-        print('----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+        print('----------\n\nData for %s already exists in data.bengaluru.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+        print('bengaluru: '+str(info))
       else:
         #write to file
-        info=', '.join((date_str,str(general_available),str(general_admitted),str(hdu_available),str(hdu_admitted),str(icu_available),str(icu_admitted),str(ventilator_available),str(ventilator_admitted)))        
+        
         a=open('data.bengaluru.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.bengaluru.csv: '+info) 
         
@@ -413,7 +422,7 @@ if __name__=='__main__':
       dont_update_data_csv=False
       if date_str in dates: 
             dont_update_data_csv=True
-            print('----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+            print('----------\n\nData for %s already exists in data.delhi.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
       
       #get data
       y=str(requests.get('https://coronabeds.jantasamvad.org/covid-info.js').content);
@@ -597,7 +606,7 @@ if __name__=='__main__':
       
       if date_str in dates: 
         # ~ dont_update_data_csv=True
-        print('----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+        print('----------\n\nData for %s already exists in data.chennai.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
       else:
         #write to file
         info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
