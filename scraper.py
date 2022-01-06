@@ -378,7 +378,11 @@ if __name__=='__main__':
       row=(date_str,nt,ot,it,vt,no,oo,io,vo)
       print(city+':');      print(row)
     elif city=='nagpur':
-      x=os.popen('curl -# -k https://nsscdcl.org/covidbeds/').read()
+      x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
+      tries=0
+      while (not x) and tries<10: #try proxy
+        x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
+        
       soup=BeautifulSoup(x,'html.parser')
       
       oa=soup('div',attrs={'class':'small-box'})[0]('button')[0].text.split(':')[1].strip()
