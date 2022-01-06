@@ -259,8 +259,9 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai']:
-  # ~ for city in ['mumbai']:
+  # ~ for city in ['hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai']:
+  for city in ['chandigarh']:
+    print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
       options=webdriver.ChromeOptions();
@@ -389,6 +390,23 @@ if __name__=='__main__':
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
       print(city+':')
       print(row)
+    elif city=='chandigarh':
+      x=os.popen('curl -k http://chdcovid19.in/chdcovidbed19/index.php/home/stats').read()
+      soup=BeautifulSoup(x,'html.parser');
+      table=soup('table')[0]
+      
+      # ~ toc=tvc=tic=tnc=0
+      # ~ too=tvo=tio=tno=0
+      # ~ for row in table('tr')[2:]:
+        # ~ hospital_name,hosp_type,updated_on,oc,oa,ov,nc,no,nv,ic,io,iv,vc,vo,vv=[i.text for i in  row('td')]
+        # ~ toc+=int(oc);        tvc+=int(vc);        tic+=int(ic);        tnc+=int(nc)
+        # ~ too+=int(oo);        tvo+=int(vo);        tio+=int(io);        tno+=int(no)
+      
+      try: xyz,toc,too,toa,tnc,tno,tna,tic,tio,tia,tvc,tvo,tva=[i.text for i in  table('tr')[-1]('td')]
+      except:
+        print('could not unpack chandigarh values!\n'+str(table('tr')[-1]('td')))
+      row=(date_str,tnc,toc,tic,tvc,tno,too,tio,tvo)
+      print(city+' : '+str(row))
     elif city=='hp':
       x=os.popen('curl -k https://covidcapacity.hp.gov.in/index.php').read()
       from bs4 import BeautifulSoup
@@ -472,7 +490,9 @@ if __name__=='__main__':
         info=', '.join((date_str,str(tot_o2_beds),str(tot_non_o2_beds),str(tot_icu_beds),str(occupied_o2_beds),str(occupied_non_o2_beds),str(occupied_icu_beds)))        
         a=open('data.chennai.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.chennai.csv: '+info)        
-    if city in ['mp','hp','pune']:
+    
+    #generic writer for most cities
+    if city in ['mp','hp','pune','chandigarh']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
