@@ -317,6 +317,7 @@ if __name__=='__main__':
       
       info=', '.join((bulletin_date,str(general_available),str(general_admitted),str(hdu_available),str(hdu_admitted),str(icu_available),str(icu_admitted),str(ventilator_available),str(ventilator_admitted)))        
       
+      os.system('rm -v BLR_'+str(date_str)+'.pdf')
       if bulletin_date in dates: 
         # ~ dont_update_data_csv=True
         print('----------\n\nData for %s already exists in data.bengaluru.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
