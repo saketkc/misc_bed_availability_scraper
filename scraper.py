@@ -4,7 +4,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver import ActionChains
 from tabula import read_pdf
-
+import pandas as pd
 
 import os,requests,time,bs4,datetime,csv;
 from PIL import Image
@@ -15,6 +15,16 @@ from bs4 import BeautifulSoup
 # ~ global_proxy='socks4://103.88.221.194:46450'
 global_proxy='socks4://49.206.195.204:5678'
 
+def get_url_failsafe(u):
+  x=os.popen('curl -# -k '+u).read();
+  tries=0
+  while (not x) and tries<10: 
+    x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k "'+u+'"').read()
+  if x: 
+    soup=BeautifulSoup(x,'html.parser')
+    return soup
+  else:
+    print('Failed to download website: %s either directly(curl) or via proxy!!' %(u))
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
   # ~ b=[i for i in open('tmp.txt').readlines() if i]
@@ -261,8 +271,8 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb']:
-  # ~ for city in ['wb']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa']:
+  # ~ for city in ['pb','jammu','goa']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -329,6 +339,31 @@ if __name__=='__main__':
         a=open('data.bengaluru.csv','a');a.write(info+'\n');a.close()
         print('Appended to data.bengaluru.csv: '+info) 
         
+    elif city=='pb':
+      os.system('curl -# -k "https://phsc.punjab.gov.in/sites/default/files/Government%20Facility%20Report_123.xlsx" -o tmp.xlsx')
+      os.system('ssconvert tmp.xlsx tmp.csv')
+      x=pd.read_csv('tmp.csv');
+      summary=list(x.iloc[len(x)-1][2:-4])
+      tot_o2=int(summary[0]);      tot_icu=int(summary[8]);      tot_vent=int(summary[13])
+      occupied_normal=int(summary[3])+int(summary[5])
+      occupied_o2=int(summary[0])-int(summary[1])
+      occupied_icu=int(summary[8])-int(summary[9])
+      occupied_vent=int(summary[13])-int(summary[14])
+      
+      os.system('curl -# -k "https://phsc.punjab.gov.in/sites/default/files/Private%20Facility%20Report_124.xlsx" -o tmp.xlsx')
+      os.system('ssconvert tmp.xlsx tmp.csv')
+      x=pd.read_csv('tmp.csv');
+      summary=list(x.iloc[len(x)-1][2:-4])
+      tot_o2+=int(summary[0]);      tot_icu+=int(summary[8]);      tot_vent+=int(summary[13])
+      occupied_normal+=int(summary[3])+int(summary[5])
+      occupied_o2+=int(summary[0])-int(summary[1])
+      occupied_icu+=int(summary[8])-int(summary[9])
+      occupied_vent+=int(summary[13])-int(summary[14])
+      os.system('rm -vf tmp.csv tmp.xlsx')
+      
+      row=(tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      print(city+':');      print(row)
+      
     elif city=='tn':
       tamil_nadu_auto_parse_latest_bulletin()
     elif city=='gurugram':
@@ -377,6 +412,24 @@ if __name__=='__main__':
       vo=int(vt)-int(vv)
       row=(date_str,nt,ot,it,vt,no,oo,io,vo)
       print(city+':');      print(row)
+    elif city=='goa':
+      soup=get_url_failsafe('https://goaonline.gov.in/beds')
+      table=soup('table')[1]
+      headings = [th.get_text() for th in table.find("tr").find_all("th")]
+      datasets = []
+      for row in table.find_all("tr")[1:]:
+          dataset = list(zip(headings, (td.get_text() for td in row.find_all("td"))))
+          datasets.append(dataset)
+      #rest of hosp. not updated
+      x=[i for i in datasets if i[1][1] in ["Goa Medical College & Hospital, Bambolim","Victor Hospital, Margao"]]; 
+      tot_normal=sum([int(i[2][1]) for i in x])
+      vacant_normal=sum([int(i[3][1]) for i in x])
+      occupied_normal=tot_normal-vacant_normal
+      tot_icu=sum([int(i[4][1]) for i in x])
+      vacant_icu=sum([int(i[5][1]) for i in x])
+      occupied_icu=tot_icu-vacant_icu
+      row=(date_str,tot_normal,tot_icu,occupied_normal,occupied_icu)
+      print(city+':');      print(row)
     elif city=='jammu':
       x=os.popen('curl --max-time 30 -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU').read()
       tries=0
@@ -390,13 +443,14 @@ if __name__=='__main__':
         tries=0
         while (not x) and tries<10: 
           x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k '+hospital).read()
+        soup=BeautifulSoup(x,'html.parser')
         try:
           x1,x2,x3,nc,nv,ic,iv,oo=[i('td')[1].text for i in soup('table')[0]('tr') if len(i('td'))>1]
           no=int(nc)-int(nv);tno+=no;tnc+=int(nc)
           io=int(ic)-int(iv);tio+=io;tic+=int(ic)
         except:
           print('failed for '+hospital)
-          print(soup)
+          # ~ print(soup)
         
       row=(date_str,tnc,tic,tno,too,tio)
       print(city+':');      print(row)
@@ -688,7 +742,7 @@ if __name__=='__main__':
         print('Appended to data.chennai.csv: '+info)        
     
     #generic writer for most cities
-    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb']:
+    if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa']:
       csv_fname='data.'+city+'.csv'
       a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
