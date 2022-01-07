@@ -361,7 +361,7 @@ if __name__=='__main__':
       occupied_vent+=int(summary[13])-int(summary[14])
       os.system('rm -vf tmp.csv tmp.xlsx')
       
-      row=(tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
+      row=(date_str,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
       print(city+':');      print(row)
       
     elif city=='tn':
