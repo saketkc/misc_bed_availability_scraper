@@ -3,13 +3,11 @@ name: CI build
 on:
   schedule:
   - cron:  '12 6 * * *'
-on:
   push:
     branches:
       - master
     paths-ignore:
       - 'data.chennai.csv'
-  #~ pull_request:
   
 
 jobs:
