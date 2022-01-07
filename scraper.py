@@ -16,10 +16,10 @@ from bs4 import BeautifulSoup
 global_proxy='socks4://49.206.195.204:5678'
 
 def get_url_failsafe(u):
-  x=os.popen('curl -# -k '+u).read();
+  x=os.popen('curl --max-time 25 -# -k '+u).read();
   tries=0
   while (not x) and tries<10: 
-    x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k "'+u+'"').read()
+    x=os.popen('curl --max-time 45 -x '+global_proxy+' -# -k "'+u+'"').read()
   if x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
@@ -343,7 +343,7 @@ if __name__=='__main__':
       os.system('curl -# -k "https://phsc.punjab.gov.in/sites/default/files/Government%20Facility%20Report_123.xlsx" -o tmp.xlsx')
       os.system('ssconvert tmp.xlsx tmp.csv')
       x=pd.read_csv('tmp.csv');
-      summary=list(x.iloc[len(x)-1][2:-4])
+      summary=list(x.iloc[len(x)-1][3:-4])
       tot_o2=int(summary[0]);      tot_icu=int(summary[8]);      tot_vent=int(summary[13])
       occupied_normal=int(summary[3])+int(summary[5])
       occupied_o2=int(summary[0])-int(summary[1])
@@ -353,7 +353,7 @@ if __name__=='__main__':
       os.system('curl -# -k "https://phsc.punjab.gov.in/sites/default/files/Private%20Facility%20Report_124.xlsx" -o tmp.xlsx')
       os.system('ssconvert tmp.xlsx tmp.csv')
       x=pd.read_csv('tmp.csv');
-      summary=list(x.iloc[len(x)-1][2:-4])
+      summary=list(x.iloc[len(x)-1][3:-4])
       tot_o2+=int(summary[0]);      tot_icu+=int(summary[8]);      tot_vent+=int(summary[13])
       occupied_normal+=int(summary[3])+int(summary[5])
       occupied_o2+=int(summary[0])-int(summary[1])
@@ -455,12 +455,11 @@ if __name__=='__main__':
       row=(date_str,tnc,tic,tno,too,tio)
       print(city+':');      print(row)
     elif city=='nagpur':
-      x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
-      tries=0
-      while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
+      # ~ x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
+      # ~ tries=0
+      # ~ while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
         
-      soup=BeautifulSoup(x,'html.parser')
-      
+      soup=get_url_failsafe('https://nsscdcl.org/covidbeds/')      
       oa=soup('div',attrs={'class':'small-box'})[0]('button')[0].text.split(':')[1].strip()
       oo=soup('div',attrs={'class':'small-box'})[0]('label')[0].text.split(':')[1].strip()
       oc=int(oa)+int(oo)
