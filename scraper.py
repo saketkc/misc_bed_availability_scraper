@@ -585,7 +585,7 @@ if __name__=='__main__':
     elif city=='ap':
       br=webdriver.PhantomJS();br.get('http://dashboard.covid19.ap.gov.in/ims/hospbed_reports//');time.sleep(3)
       x=br.page_source;      soup=BeautifulSoup(x,'html.parser');
-      xyz,number_of_hospitals,tot_icu,occupied_icu,vacant_icu,tot_o2,occupied_o2,vacant_o2,tot_normal,occupied_normal,vacant_normal,tot_vent,occupied_vent,vacant_vent,=[i.text for i in soup('tr')[-1]('td')]
+      xyz,number_of_hospitals,tot_icu,occupied_icu,vacant_icu,tot_o2,occupied_o2,vacant_o2,tot_normal,occupied_normal,vacant_normal,tot_vent,occupied_vent,vacant_vent,=[i.text for i in soup('tr')[-1]('td')][:14]
       row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
       print(city+':')
       print(row)
