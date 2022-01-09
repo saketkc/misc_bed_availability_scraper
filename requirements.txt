@@ -4,3 +4,4 @@ selenium
 requests
 pillow
 tabula-py
+colorama
