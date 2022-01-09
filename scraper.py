@@ -32,7 +32,7 @@ def get_url_failsafe(u,timeout=25):
   x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
   tries=0
   while (not x) and tries<10: 
-    x=os.popen('curl --max-time 45 -x '+global_proxy+' -# -k "'+u+'"').read()
+    x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
   if x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
