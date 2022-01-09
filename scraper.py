@@ -273,7 +273,7 @@ if __name__=='__main__':
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
   for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa']:
-  # ~ for city in ['pb','jammu','goa']:
+  # ~ for city in ['bengaluru']:
     print('running scraper for: '+city)
     if city=='bengaluru':
       #BENGALURU
@@ -296,33 +296,28 @@ if __name__=='__main__':
               pdf.close()
               break
       #get date from bulletin
-      os.system('pdftotext -layout -f 1 -l 1 BLR_'+str(date_str)+'.pdf t.txt')
+      os.system('pdftotext -layout  BLR_'+str(date_str)+'.pdf t.txt')
       b=[i.strip() for i in open('t.txt').readlines() if i.strip()]
       date_line=[i for i in b if 'WAR ROOM'.lower() in i.lower()]
       if not date_line: print('could not get date from bengaluru buletin BLR_'+str(date_str)+'.pdf !!');sys.exit(1)
       bulletin_date=datetime.datetime.strptime(date_line[0].split('/')[-2].strip(),'%d.%m.%Y').strftime('%Y-%m-%d')
+      
+      #get page for bed status
+      page_count=0;beds_page=0;b=[i for i in open('t.txt').readlines() if i.strip()]
+      for i in b:
+        if '\x0c' in i: page_count+=1    
+        if 'COVID BED STATUS'.lower() in i.lower(): beds_page=page_count+1;break
+      # ~ print(beds_page)
   
       # print(text)
-      tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=12,silent=True)
-      df=tables[0]
+      tables = read_pdf("BLR_"+str(date_str)+".pdf", pages=beds_page,silent=True)
+      dff=tables[0]
       
       results=[]
-      results.append(df.iloc[14][-2].split())
-      results.append(df.iloc[14][-3].split())
-      # ~ print(results)
-
-      general_available = results[1][0]
-      general_admitted = results[0][0]
-
-      hdu_available = results[1][1]
-      hdu_admitted = results[0][1]
-
-      icu_available = results[1][2]
-      icu_admitted = results[0][2]
-
-      ventilator_available = results[1][3]
-      ventilator_admitted = results[0][3]
-
+      raw_line=' '.join([str(i) for i in list(dff.iloc[len(dff)-1])])
+      x=[i for i in raw_line.split() if i.isnumeric()]
+      general_available,hdu_available,icu_available,ventilator_available=x[1:5]
+      general_admitted,hdu_admitted,icu_admitted,ventilator_admitted=x[6:10]
 
       a=open('data.bengaluru.csv');r=csv.reader(a);info=[i for i in r];a.close()
       dates=list(set([i[0] for i in info[1:]]));dates.sort()
