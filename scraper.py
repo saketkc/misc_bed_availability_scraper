@@ -404,7 +404,7 @@ if __name__=='__main__':
         hosp=[i for i in datasets if i[0][1] in regularly_updated and i[3][1]=='DCH']
         
         tot_beds=0;vacant_beds=0;tot_icu=0;vacant_icu=0
-        for h in hosp:
+        for i in hosp:
           tot_beds+=int(i[5][1])
           vacant_beds+=int(i[6][1])
           tot_icu+=int(i[7][1])
