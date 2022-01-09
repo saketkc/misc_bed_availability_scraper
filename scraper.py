@@ -284,10 +284,10 @@ if __name__=='__main__':
   
   date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan']:
-  for city in ['pb','bihar','rajasthan']:
-      print('running scraper for: '+city)
-    # ~ try:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan']:
+  # ~ for city in ['pb','bihar','rajasthan']:
+    print('running scraper for: '+city)
+    try:
       if city=='bengaluru':
         #BENGALURU
   
@@ -803,7 +803,7 @@ if __name__=='__main__':
           #write to file
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
-    # ~ except:
-      # ~ print('Failed to run scraper for : '+highlight(city))
+    except:
+      print('Failed to run scraper for : '+highlight(city))
     
   
