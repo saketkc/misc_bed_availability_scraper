@@ -587,7 +587,7 @@ if __name__=='__main__':
         print(row)
       except:
         print('Failed to download/scrape AP data from http://dashboard.covid19.ap.gov.in/ims/hospbed_reports/ !!')
-     elif city=='telangana':
+    elif city=='telangana':
       x=os.popen('curl -# -k http://164.100.112.24/SpringMVC/Hospital_Beds_Statistic_Bulletin_citizen.htm').read()
       soup=BeautifulSoup(x,'html.parser')
       try:
