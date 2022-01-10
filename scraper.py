@@ -386,7 +386,7 @@ if __name__=='__main__':
       elif city=='gurugram':
         gurugram_auto_parse_latest_bulletin()
       elif city=='rajasthan':
-        soup=get_url_failsafe('https://covidinfo.rajasthan.gov.in/Covid-19hospital-wisebedposition-wholeRajasthan.aspx',120)
+        soup=get_url_failsafe('https://covidinfo.rajasthan.gov.in/Covid-19hospital-wisebedposition-wholeRajasthan.aspx',75)
         hosp=[' '.join([j.text for j in row('td')]) for row in soup('table')[0]('tr')][3:]
         recent_update=[i for i in hosp if i.split()[-1]!='N/A' and datetime.datetime.strptime(i.split()[-2],'%d-%m-%Y')>=datetime.datetime.now()-datetime.timedelta(days=2) ]
         tot_normal=0;tot_o2=0;tot_icu=0;tot_vent=0;occupied_normal=0;occupied_o2=0;occupied_icu=0;occupied_vent=0
