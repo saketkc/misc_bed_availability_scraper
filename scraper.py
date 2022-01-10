@@ -286,7 +286,7 @@ if __name__=='__main__':
   
   failed_cities=[]
   for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana']:
-  # ~ for city in ['ludhiana']:
+  # ~ for city in ['jamshedpur']:
     print('running scraper for: '+city)
     date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     try:
@@ -397,6 +397,8 @@ if __name__=='__main__':
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
         print(city+':')
         print(row)
+      elif city=='jamshedpur':
+        soup=get_url_failsafe('https://xlri.edu/covid19/bed-status/',60)
       elif city=='bihar':
         soup=get_url_failsafe('https://covid19health.bihar.gov.in/DailyDashboard/BedsOccupied',60)
         datasets=get_dataset_from_html_table(soup('table')[0])
