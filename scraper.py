@@ -282,12 +282,13 @@ def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):
 
 if __name__=='__main__':
   
-  date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
   
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan']:
-  # ~ for city in ['pb','bihar','rajasthan']:
-    print('running scraper for: '+city)
-    try:
+  failed_cities=[]
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana']:
+  # ~ for city in ['ludhiana']:
+      print('running scraper for: '+city)
+      date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
+    # ~ try:
       if city=='bengaluru':
         #BENGALURU
   
@@ -729,6 +730,62 @@ if __name__=='__main__':
         tot_normal,occupied_normal,vacant_normal,tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu=[i.text for i in xx if i.text.isnumeric()]
         row=(date_str,tot_normal,tot_o2,tot_icu,occupied_normal,occupied_o2,occupied_icu)
         print(city+':');print(row)
+      elif city=='ludhiana':
+
+        soup = get_url_failsafe("https://ludhiana.nic.in/bed-status/")
+        links = soup.find_all('a')
+        
+        for link in links:
+          if ('.pdf' in link.get('href', [])):
+              print("Downloading pdf...")
+
+              l = link.get('href')
+              print(l)
+              response = requests.get(l)
+              pdf = open("LDH_"+str(date_str)+".pdf", 'wb')
+              pdf.write(response.content)
+              pdf.close()
+              break
+
+        #get date
+        os.system('pdftotext -f 1 -l 1 -x 0 -y 0 -W 500 -H 300  -layout LDH_'+str(date_str)+'.pdf tmp.txt')
+        b=[i.strip() for i in open('tmp.txt').readlines() if i.strip()]
+        date_line=['Last edited on 9-January-2022 5.00 PM']
+        if not date_line:         print(highlight('could not extract date for Ludhiana!!'));         continue
+        date_line=date_line[0].split();date_line=date_line[date_line.index('on')+1]
+        bulletin_date=datetime.datetime.strptime(date_line,'%d-%B-%Y')
+       
+      # print(text)
+        tables = read_pdf("LDH_"+str(date_str)+".pdf", pages="all")
+        df=tables[-1]
+        print(df.iloc[-1])
+        nums = []
+        for x in df.iloc[-1]:
+          if(type(x) is None):
+            continue
+          if(type(x) == str):
+            for s in x.split():
+              if(s.isnumeric()):
+                nums.append(s)
+  
+        # ~ print(nums)
+        tot_o2,occupied_o2,vacant_o2,tot_icu,occupied_icu,vacant_icu=nums
+        a=open('data.ludhiana.csv');r=csv.reader(a);info=[i for i in r];a.close()
+        dates=list(set([i[0] for i in info[1:]]));dates.sort()
+        #save space by deleting the pdf
+        if os.path.exists("LDH_"+str(date_str)+".pdf"): os.remove("LDH_"+str(date_str)+".pdf")
+        date_str=bulletin_date.strftime('%Y-%m-%d')
+        row=(date_str,tot_o2,tot_icu,occupied_o2,occupied_icu)
+        print(city+':'+str(row))
+        # ~ if date_str in dates: 
+          # ~ print('----------\n\nData for %s already exists in data.ludhiana.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+        # ~ else:
+          # ~ #write to file
+          # ~ info=', '.join((date_str,tot_o2,tot_icu,occupied_o2,occupied_icu))
+          # ~ print(city+' : '+str(info)) 
+          # ~ # Date, L2_Total_Beds, L2_Occupied_Beds, L2_Available_Beds, L3_Total_Beds, L3_Occupied_Beds, L3_Available_Beds
+          # ~ a=open('data.ludhiana.csv','a');a.write(info+'\n');a.close()
+          # ~ print('Appended to data.ludhiana.csv: '+info) 
       elif city=='chennai':
         #CHENNAI
         import requests
@@ -791,7 +848,7 @@ if __name__=='__main__':
           print('Appended to data.chennai.csv: '+info)        
       
       #generic writer for most cities
-      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan']:
+      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana']:
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
@@ -803,7 +860,9 @@ if __name__=='__main__':
           #write to file
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
-    except:
-      print('Failed to run scraper for : '+highlight(city))
+    # ~ except:
+      # ~ failed_cities.append(city)
+    
+  # ~ for city in failed_cities:    print('Failed to run scraper for : '+highlight(city))
     
   
