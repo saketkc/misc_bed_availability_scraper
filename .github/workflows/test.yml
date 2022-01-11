@@ -3,11 +3,11 @@ name: CI build
 on:
   schedule:
   - cron:  '12 6 * * *'
-  #~ push:
-    #~ branches:
-      #~ - master
-    #~ paths-ignore:
-      #~ - 'data.chennai.csv'
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'data.chennai.csv'
   
 
 jobs:
@@ -34,8 +34,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         sudo apt-get install -y poppler-utils phantomjs gnumeric
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1    
+    #~ - name: Setup upterm session
+      #~ uses: lhotari/action-upterm@v1    
     - name: Scrape city beds data
       run: |
         python scraper.py
