@@ -286,8 +286,8 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
-  # ~ for city in ['jamshedpur']:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
+  for city in ['mumbai']:
     print('running scraper for: '+city)
     date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     try:

@@ -3,12 +3,9 @@ name: CI build
 on:
   schedule:
   - cron:  '12 6 * * *'
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - 'data.chennai.csv'
-  
+  #~ push:
+    #~ branches:
+      #~ - master
 
 jobs:
   build:
