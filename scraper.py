@@ -254,11 +254,13 @@ def mumbai_bulletin_auto_parser(bulletin='',proxy=global_proxy):
   cmd='pdftotext -x 340 -y 100 -W 95 -H 340 -layout -f 2 -l 2 "'+bulletin+'" t.txt';os.system(cmd)
   b=[i.strip().replace(',','') for i in open('t.txt').readlines() if i.strip()]
   
-  if not ('2021' in b[0] or '2022' in b[0]): #means date wasn't at top, parsed wrong
+  if not ('2021' in b[0] or '2022' in b[0] or '2021' in b[1] or '2022' in b[1]): #means date wasn't at top, parsed wrong
     print('could not parse occupancy numbers')
   else:
+    for j in range(len(b)):
+      if b[j] and b[j][0].isnumeric(): b=b[j:];break
     try:
-      bc,bo,ba,dc,do,da,oc,oo,oa,ic,io,ia,vc,vo,va=b[1:]
+      bc,bo,ba,dc,do,da,oc,oo,oa,ic,io,ia,vc,vo,va=[i for i in b if i]
     except:
       print('failed to get occupancy split')
       return b
