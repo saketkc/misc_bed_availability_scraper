@@ -1,3 +1,4 @@
 date,total_normal_beds,total_o2_beds,total_icu_beds,total_ventilator_beds,occupied_normal_beds,occupied_o2_beds,occupied_icu_beds,occupied_ventilator_beds
 2022-01-07,5391,10746,1423,1575,704,1284,212,72661
 2022-01-10,5267,10892,1241,1553,983,2286,210,378
+2022-01-13,6179,11924,1438,1718,864,1592,237,72696
