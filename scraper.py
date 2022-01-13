@@ -332,7 +332,7 @@ if __name__=='__main__':
         dff=tables[0]
         
         results=[]
-        raw_line=' '.join([str(i) for i in list(dff.iloc[len(dff)-1])])
+        raw_line=' '.join([str(i).replace(',','') for i in list(dff.iloc[len(dff)-1])])
         x=[i for i in raw_line.split() if i.isnumeric()]
         general_available,hdu_available,icu_available,ventilator_available=x[1:5]
         general_admitted,hdu_admitted,icu_admitted,ventilator_admitted=x[6:10]
