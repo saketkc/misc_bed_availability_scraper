@@ -882,7 +882,9 @@ if __name__=='__main__':
           print('Appended to %s :%s' %(csv_fname,str(row)))        
     except:
       failed_cities.append(city)
-    
-  for city in failed_cities:    print('Failed to run scraper for : '+highlight(city))
+ 
+  afailed=open('failed_runs','a') ;datetimes=[(d1 + datetime.timedelta(days=i)) for i in range(delta.days + 1)]
+  print('Failed to run scraper for : '+', '.join(failed_cities))
+  afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
     
   
