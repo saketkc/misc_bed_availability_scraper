@@ -16,7 +16,6 @@ import json,time,re
 from bs4 import BeautifulSoup
 
 
-
 # ~ global_proxy='socks4://157.119.201.231:1080'
 # ~ global_proxy='socks4://103.88.221.194:46450'
 global_proxy='socks4://49.206.195.204:5678'
@@ -37,6 +36,7 @@ def get_url_failsafe(u,timeout=25):
   x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
   tries=0
   while (not x) and tries<10: 
+    print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
     x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
   if x: 
     soup=BeautifulSoup(x,'html.parser')
@@ -292,7 +292,6 @@ if __name__=='__main__':
   
   failed_cities=[]
   for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur', 'jharkhand']:
-  # ~ for city in ['mumbai']:
     print('running scraper for: '+city)
     date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     try:
@@ -927,8 +926,10 @@ if __name__=='__main__':
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
     except:
-      failed_cities.append(city)
-    
-  for city in failed_cities:    print('Failed to run scraper for : '+highlight(city))
+        failed_cities.append(city)
+ 
+  # ~ afailed=open('failed_runs','a')
+  # ~ print('Failed to run scraper for : '+', '.join(failed_cities))
+  # ~ afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
     
   
