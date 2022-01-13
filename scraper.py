@@ -13,7 +13,6 @@ import json,time,re
 from bs4 import BeautifulSoup
 
 
-
 # ~ global_proxy='socks4://157.119.201.231:1080'
 # ~ global_proxy='socks4://103.88.221.194:46450'
 global_proxy='socks4://49.206.195.204:5678'
