@@ -30,14 +30,16 @@ def highlight(text):
   highlight_reset=colorama.Back.RESET+colorama.Fore.RESET+colorama.Style.RESET_ALL
   return highlight_begin+text+highlight_reset
 
-def get_url_failsafe(u,timeout=25):
-  x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
+def get_url_failsafe(u,out='',timeout=25):
+  if out: x=os.popen('curl --max-time '+str(timeout)+' -# -k "'+u+'" -o "'+out+'"').read();
+  else: x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
   tries=0
   while (not x) and tries<10: 
     print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
-    x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
+    if out: x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'" -o "'+out+'"').read()
+    else:x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
     tries+=1
-  if x: 
+  if (not out) and x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
   else:
@@ -418,6 +420,7 @@ if __name__=='__main__':
             print("Downloading pdf...")
             l = "http://jrhms.jharkhand.gov.in/" + link.get("href")
             print(l)
+            get_url_failsafe(l,out="Jharkhand_" + str(date_str) + ".pdf")
             response = requests.get(l)
             pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
             pdf.write(response.content)
