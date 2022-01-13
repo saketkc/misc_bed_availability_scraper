@@ -45,7 +45,7 @@ def get_url_failsafe(u,out='',timeout=25):
     return soup
   else:
     if out and not os.path.exists(out): print('Failed to save url:%s to file: %s' %(u,out))
-    print('Failed to download website: %s either directly(curl) or via proxy!!' %(u))
+    else: print('Failed to download website: %s either directly(curl) or via proxy!!' %(u))
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
   # ~ b=[i for i in open('tmp.txt').readlines() if i]
@@ -294,8 +294,8 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
-  for city in ['jharkhand']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand']:
+  # ~ for city in ['jharkhand']:
     print('running scraper for: '+city)
     date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     try:
@@ -938,9 +938,9 @@ if __name__=='__main__':
     except:
       failed_cities.append(city)
  
-  afailed=open('failed_runs','a')
-  print('Failed to run scraper for : '+', '.join(failed_cities))
+  afailed=open('failed_runs','a'); 
   afailed.write('On %s failed runs for: %s\n' %(date_str,', '.join(failed_cities)))
   afailed.close()
+  if failed_cities: print('Failed to run scraper for : '+', '.join(failed_cities))
     
   
