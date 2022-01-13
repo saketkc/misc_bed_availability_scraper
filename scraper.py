@@ -395,6 +395,7 @@ if __name__=='__main__':
         tot_normal=0;tot_o2=0;tot_icu=0;tot_vent=0;occupied_normal=0;occupied_o2=0;occupied_icu=0;occupied_vent=0
         for i in recent_update:
           tot_normal0,occupied_normal0,x1,tot_o20,occupied_o20,x2,tot_icu0,occupied_icu0,x3,tot_vent0,occupied_vent0,x4=i.split()[-16:-4]
+          print(i.split())
           tot_normal+=int(tot_normal0);tot_o2+=int(tot_o20);tot_icu+=int(tot_icu0);tot_vent+=int(tot_vent0)
           occupied_normal+=int(occupied_normal0);occupied_o2+=int(occupied_o20);occupied_icu+=int(occupied_icu0);occupied_vent+=int(occupied_vent0)
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
