@@ -531,7 +531,7 @@ if __name__=='__main__':
         # ~ tries=0
         # ~ while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
           
-        soup=get_url_failsafe('https://nsscdcl.org/covidbeds/')      
+        soup=get_url_failsafe('https://nsscdcl.org/covidbeds/',20)      
         oa=soup('div',attrs={'class':'small-box'})[0]('button')[0].text.split(':')[1].strip()
         oo=soup('div',attrs={'class':'small-box'})[0]('label')[0].text.split(':')[1].strip()
         oc=int(oa)+int(oo)
