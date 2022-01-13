@@ -38,6 +38,7 @@ def get_url_failsafe(u,timeout=25):
   while (not x) and tries<10: 
     print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
     x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
+    tries+=1
   if x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
@@ -396,9 +397,12 @@ if __name__=='__main__':
         recent_update=[i for i in hosp if i.split()[-1]!='N/A' and datetime.datetime.strptime(i.split()[-2],'%d-%m-%Y')>=datetime.datetime.now()-datetime.timedelta(days=2) ]
         tot_normal=0;tot_o2=0;tot_icu=0;tot_vent=0;occupied_normal=0;occupied_o2=0;occupied_icu=0;occupied_vent=0
         for i in recent_update:
-          tot_normal0,occupied_normal0,x1,tot_o20,occupied_o20,x2,tot_icu0,occupied_icu0,x3,tot_vent0,occupied_vent0,x4=i.split()[-16:-4]
-          tot_normal+=int(tot_normal0);tot_o2+=int(tot_o20);tot_icu+=int(tot_icu0);tot_vent+=int(tot_vent0)
-          occupied_normal+=int(occupied_normal0);occupied_o2+=int(occupied_o20);occupied_icu+=int(occupied_icu0);occupied_vent+=int(occupied_vent0)
+          try:
+            tot_normal0,occupied_normal0,x1,tot_o20,occupied_o20,x2,tot_icu0,occupied_icu0,x3,tot_vent0,occupied_vent0,x4=i.split()[-16:-4]          
+            tot_normal+=int(tot_normal0);tot_o2+=int(tot_o20);tot_icu+=int(tot_icu0);tot_vent+=int(tot_vent0)
+            occupied_normal+=int(occupied_normal0);occupied_o2+=int(occupied_o20);occupied_icu+=int(occupied_icu0);occupied_vent+=int(occupied_vent0)
+          except:
+            print('in parsing rajasthan failed for hospital '+str(i))
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
         print(city+':')
         print(row)
@@ -926,10 +930,11 @@ if __name__=='__main__':
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
     except:
-        failed_cities.append(city)
+      failed_cities.append(city)
  
-  # ~ afailed=open('failed_runs','a')
-  # ~ print('Failed to run scraper for : '+', '.join(failed_cities))
-  # ~ afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
+  afailed=open('failed_runs','a')
+  print('Failed to run scraper for : '+', '.join(failed_cities))
+  afailed.write('On %s failed runs for: %s\n' %(date_str,', '.join(failed_cities)))
+  afailed.close()
     
   
