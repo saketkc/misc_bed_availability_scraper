@@ -33,6 +33,7 @@ def get_url_failsafe(u,timeout=25):
   x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
   tries=0
   while (not x) and tries<10: 
+    print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
     x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
   if x: 
     soup=BeautifulSoup(x,'html.parser')
@@ -287,11 +288,11 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
-  # ~ for city in ['mumbai']:
-    print('running scraper for: '+city)
-    date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
-    try:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
+  for city in ['rajasthan']:
+      print('running scraper for: '+city)
+      date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
+    # ~ try:
       if city=='bengaluru':
         #BENGALURU
   
@@ -879,11 +880,11 @@ if __name__=='__main__':
           #write to file
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
-    except:
-      failed_cities.append(city)
+    # ~ except:
+      # ~ failed_cities.append(city)
  
-  afailed=open('failed_runs','a') ;datetimes=[(d1 + datetime.timedelta(days=i)) for i in range(delta.days + 1)]
-  print('Failed to run scraper for : '+', '.join(failed_cities))
-  afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
+  # ~ afailed=open('failed_runs','a') ;datetimes=[(d1 + datetime.timedelta(days=i)) for i in range(delta.days + 1)]
+  # ~ print('Failed to run scraper for : '+', '.join(failed_cities))
+  # ~ afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
     
   
