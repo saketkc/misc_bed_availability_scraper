@@ -3,6 +3,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver import ActionChains
+from urllib.parse import unquote
+from subprocess import CalledProcessError
+
 from tabula import read_pdf
 import pandas as pd
 
@@ -288,7 +291,7 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
+  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur', 'jharkhand']:
   # ~ for city in ['mumbai']:
     print('running scraper for: '+city)
     date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
@@ -416,6 +419,49 @@ if __name__=='__main__':
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
         print(city+':')
         print(row)
+      elif city=="jharkhand":
+        soup = get_url_failsafe("http://jrhms.jharkhand.gov.in/news-press-releases")
+        links = soup.find_all("a", {"target": "_blank"})
+        date = datetime.datetime.now()
+        date_str = date.strftime("%Y-%m-%d")
+
+        for link in links:
+            if ".pdf" in link.get("href", []):
+                print("Downloading pdf...")
+                l = "http://jrhms.jharkhand.gov.in/" + link.get("href")
+                print(l)
+                response = requests.get(l)
+                pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
+                pdf.write(response.content)
+                pdf.close()
+
+                try:
+                    tables = read_pdf(
+                        "Jharkhand_" + str(date_str) + ".pdf", pages=2, silent=True
+                    )
+                except CalledProcessError:
+                    continue
+                dff = tables[0]
+
+                if "Bed Status" in dff.columns[2]:
+                    raw_line = " ".join(list(dff.iloc[len(dff) - 1])).strip()
+
+                    (
+                        tot_o2,
+                        occupied_o2,
+                        tot_icu,
+                        occupied_icu,
+                        tot_vent,
+                        occupied_vent,
+                    ) = raw_line.split(" ")[-6:]
+                
+                    report_date_str = unquote(l).split("/")[-1].split(".pdf")[0].split(" ")[0]
+                    report_date_str = datetime.datetime.strptime(report_date_str, "%d-%m-%Y").date().strftime("%Y-%m-%d")
+
+                
+                    row=(report_date_str,tot_o2,tot_icu,tot_vent,occupied_o2,occupied_icu,occupied_vent)
+                    print(city+':');      print(row)
+
       elif city=='bihar':
         soup=get_url_failsafe('https://covid19health.bihar.gov.in/DailyDashboard/BedsOccupied',60)
         datasets=get_dataset_from_html_table(soup('table')[0])
@@ -868,7 +914,7 @@ if __name__=='__main__':
           print('Appended to data.chennai.csv: '+info)        
       
       #generic writer for most cities
-      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur']:
+      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur', 'jharkhand']:
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
