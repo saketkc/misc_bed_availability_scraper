@@ -421,10 +421,10 @@ if __name__=='__main__':
             l = "http://jrhms.jharkhand.gov.in/" + link.get("href")
             print(l)
             get_url_failsafe(l,out="Jharkhand_" + str(date_str) + ".pdf")
-            response = requests.get(l)
-            pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
-            pdf.write(response.content)
-            pdf.close()
+            # ~ response = requests.get(l)
+            # ~ pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
+            # ~ pdf.write(response.content)
+            # ~ pdf.close()
             downloaded_first_pdf=True
   
             try:
