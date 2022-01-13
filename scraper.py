@@ -38,11 +38,13 @@ def get_url_failsafe(u,out='',timeout=25):
     print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
     if out: x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'" -o "'+out+'"').read()
     else:x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
+    if out and os.path.exists(out): x=True
     tries+=1
   if (not out) and x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
   else:
+    if out and not os.path.exists(out): print('Failed to save url:%s to file: %s' %(u,out))
     print('Failed to download website: %s either directly(curl) or via proxy!!' %(u))
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
