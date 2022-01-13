@@ -883,7 +883,7 @@ if __name__=='__main__':
     # ~ except:
       # ~ failed_cities.append(city)
  
-  # ~ afailed=open('failed_runs','a') ;datetimes=[(d1 + datetime.timedelta(days=i)) for i in range(delta.days + 1)]
+  # ~ afailed=open('failed_runs','a')
   # ~ print('Failed to run scraper for : '+', '.join(failed_cities))
   # ~ afailed.write('On %s failed runs for: %s' %(date_str,', '.join(failed_cities)))
     
