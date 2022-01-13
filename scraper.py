@@ -35,6 +35,7 @@ def get_url_failsafe(u,timeout=25):
   while (not x) and tries<10: 
     print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
     x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
+    tries+=1
   if x: 
     soup=BeautifulSoup(x,'html.parser')
     return soup
