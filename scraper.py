@@ -10,7 +10,7 @@ from urllib.parse import unquote
 
 import os,requests,time,bs4,datetime,csv,colorama;
 from PIL import Image
-import json,time,re
+import json,time,re,pytz
 from bs4 import BeautifulSoup
 
 
@@ -294,11 +294,11 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand']:
-  # ~ for city in ['jharkhand']:
-    print('running scraper for: '+city)
-    date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
-    try:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand']:
+  for city in ['meghalaya','up']:
+      print('running scraper for: '+city)
+      date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
+    # ~ try:
       if city=='bengaluru':
         #BENGALURU
   
@@ -409,6 +409,30 @@ if __name__=='__main__':
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
         print(city+':')
         print(row)
+      elif city=="meghalaya":
+        megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
+        print("Downloading pdf..." + megh_pdf)
+        x=get_url_failsafe(megh_pdf,out="Meghalaya_" + str(date_str) + ".pdf",20)
+        try: tables = read_pdf("Meghalaya_" + str(date_str) + ".pdf", pages=1, silent=True    )
+        except CalledProcessError: pass
+        dff = tables[0]
+        if "COVID STATUS IN HOSPITALS IN THE STATE AS ON" in dff.columns[1]:
+          report_date_str = dff.columns[1].split(" ")[-1].replace(".", "-")
+          report_date_str = datetime.datetime.strptime(report_date_str, "%d-%m-%Y").date().strftime("%Y-%m-%d")
+        raw_line = " ".join([x.strip() for x in list(dff.iloc[len(dff) - 1]) if str(x)!='nan'])
+        (
+            beds_without_o2,
+            tot_o2,
+            tot_icu,
+            tot_all, 
+            tot_occupied,
+            tot_vacant
+        ) = raw_line.split(" ")[1:]
+        row=(report_date_str,tot_all,tot_occupied)
+        print(city+':');      print(row)
+
+
+
       elif city=="jharkhand":
         soup = get_url_failsafe("http://jrhms.jharkhand.gov.in/news-press-releases")
         links = soup.find_all("a", {"target": "_blank"})
@@ -923,7 +947,7 @@ if __name__=='__main__':
           print('Appended to data.chennai.csv: '+info)        
       
       #generic writer for most cities
-      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand']:
+      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya']:
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
@@ -935,11 +959,12 @@ if __name__=='__main__':
           #write to file
           a=open(csv_fname,'a');w=csv.writer(a);w.writerow(row);a.close()
           print('Appended to %s :%s' %(csv_fname,str(row)))        
-    except:
-      failed_cities.append(city)
+    # ~ except:
+      # ~ failed_cities.append(city)
  
-  afailed=open('failed_runs','a'); 
-  afailed.write('On %s failed runs for: %s\n' %(date_str,', '.join(failed_cities)))
+  detailed_date_str=datetime.datetime.now(tz=pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M')
+  afailed=open('failed_runs','a');     
+  afailed.write('On %s failed runs for: %s\n' %(detailed_date_str,', '.join(failed_cities)))
   afailed.close()
   if failed_cities: print('Failed to run scraper for : '+', '.join(failed_cities))
     
