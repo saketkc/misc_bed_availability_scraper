@@ -516,7 +516,7 @@ if __name__=='__main__':
           report_date=os.path.split(links[0])[1]
           report_date=report_date.split('Report_')[1].split('_')[0]
           report_date_str=datetime.datetime.strptime(report_date,'%d-%m-%Y').strftime('%Y-%m-%d')
-          row=(report_date_str,tot_all,tot_occupied)
+          row=(report_date_str,tot_normal,tot_icu,occupied_normal,occupied_icu)
           print(city+':');      print(row)
         else: 
           print('no links (in download area) found for manipur')
