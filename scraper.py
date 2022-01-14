@@ -492,7 +492,7 @@ if __name__=='__main__':
         all_dfs2=all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
         print(all_dfs2)
       elif city=="manipur":
-        x=s.get_url_failsafe('https://nrhmmanipur.org/?page_id=5788')
+        x=get_url_failsafe('https://nrhmmanipur.org/?page_id=5788')
         links=[i['href'] for i in x.select('#content')[0]('a') if i.has_attr('href') and "status report of patients" in i.text.lower()]
         if links: 
           x=get_url_failsafe(links[0])
