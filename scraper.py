@@ -476,12 +476,12 @@ if __name__=='__main__':
           hospital_df = get_data_df(br)
           hospital_df["district"] = district
           dfs.append(hospital_df)
-      br.close()
-      all_dfs = pd.concat(dfs)
-      all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
-      
-      all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
-      print(all_dfs)
+        br.close()
+        all_dfs = pd.concat(dfs)
+        all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
+        
+        all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
+        print(all_dfs)
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
         print("Downloading pdf..." + megh_pdf)
