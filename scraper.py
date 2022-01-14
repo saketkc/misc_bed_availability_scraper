@@ -33,6 +33,8 @@ def highlight(text):
 def get_url_failsafe(u,out='',timeout=25):
   if out: x=os.popen('curl --max-time '+str(timeout)+' -# -k "'+u+'" -o "'+out+'"').read();
   else: x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
+  if out and os.path.exists(out): x=True
+  
   tries=0
   while (not x) and tries<10: 
     print('retrying download of %s in get_url_failsafe() for the %d -th time' %(u,tries+1))
