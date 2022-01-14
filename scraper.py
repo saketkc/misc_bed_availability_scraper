@@ -448,9 +448,9 @@ if __name__=='__main__':
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--headless")
         br = webdriver.Chrome(chrome_options=options)
-        print('downloading main UP page..')
+        # ~ print('downloading main UP page..')
         br.get("https://beds.dgmhup-covid19.in/EN/covid19bedtrack")
-        print('downloaded main UP page..')
+        # ~ print('downloaded main UP page..')
         soup = BeautifulSoup(br.page_source, "html.parser")
         select_districts = soup.find("select", {"id": "MainContent_EN_ddDistrict"})
         districts = [opt.text for opt in select_districts.find_all("option")][1:]
@@ -488,6 +488,8 @@ if __name__=='__main__':
         all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
         
         all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
+        
+        all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
         print(all_dfs)
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
