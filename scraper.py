@@ -62,7 +62,7 @@ def get_data_df(br):
 
     return data_df
     
-def get_url_failsafe(u,out='',timeout=25):
+def get_url_failsafe(u,timeout=25,out=''):
   if out: x=os.popen('curl --max-time '+str(timeout)+' -# -k "'+u+'" -o "'+out+'"').read();
   else: x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
   if out and os.path.exists(out): x=True
