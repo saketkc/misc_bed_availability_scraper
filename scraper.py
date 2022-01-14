@@ -10,7 +10,7 @@ from urllib.parse import unquote
 
 import os,requests,time,bs4,datetime,csv,colorama;
 from PIL import Image
-import json,time,re,pytz
+import json,time,re,pytz,tqdm
 from bs4 import BeautifulSoup
 
 
