@@ -412,7 +412,7 @@ if __name__=='__main__':
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
         print("Downloading pdf..." + megh_pdf)
-        x=get_url_failsafe(megh_pdf,out="Meghalaya_" + str(date_str) + ".pdf",20)
+        x=get_url_failsafe(megh_pdf,out="Meghalaya_" + str(date_str) + ".pdf",timeout=20)
         try: tables = read_pdf("Meghalaya_" + str(date_str) + ".pdf", pages=1, silent=True    )
         except CalledProcessError: pass
         dff = tables[0]
