@@ -952,6 +952,7 @@ if __name__=='__main__':
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
+        date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
         
         if date_str in dates: 
           # ~ dont_update_data_csv=True
