@@ -1081,10 +1081,13 @@ if __name__=='__main__':
     # ~ except:
       # ~ failed_cities.append(city)
  
-  detailed_date_str=datetime.datetime.now(tz=pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M')
-  afailed=open('failed_runs','a');     
-  afailed.write('On %s failed runs for: %s\n' %(detailed_date_str,', '.join(failed_cities)))
-  afailed.close()
-  if failed_cities: print('Failed to run scraper for : '+', '.join(failed_cities))
+  
+  
+  if failed_cities: 
+    detailed_date_str=datetime.datetime.now(tz=pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M')
+    print('Failed to run scraper for : '+', '.join(failed_cities))
+    afailed=open('failed_runs','a');     
+    afailed.write('On %s failed runs for: %s\n' %(detailed_date_str,', '.join(failed_cities)))
+    afailed.close()
     
   
