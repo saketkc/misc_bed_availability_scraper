@@ -513,7 +513,7 @@ if __name__=='__main__':
           os.system('wget "'+links[0]+'" -O "manipur_'+str(date_str)+'.pdf"')
           x=read_pdf('manipur_'+str(date_str)+'.pdf',silent=True,pages=1)
           x=x[0]
-          raw_line = " ".join([x.strip() for x in list(x.iloc[len(x) - 2]) if str(x)!='nan'])
+          raw_line = " ".join([str(x).split('.')[0].strip() for x in list(x.iloc[len(x) - 2]) if str(x)!='nan'])
           raw_line=[i for i in raw_line.split() if i.isnumeric()]
           tot_normal,tot_icu=raw_line[:2]
           vacant_normal,vacant_icu,vacant_all=raw_line[-3:]
