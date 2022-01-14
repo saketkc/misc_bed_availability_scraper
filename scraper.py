@@ -460,26 +460,29 @@ if __name__=='__main__':
         pbar=tqdm.tqdm(districts)
         for district in pbar:
           pbar.set_description('parsing for UP district: '+district)
-          district_element = br.find_element_by_name("ctl00$MainContent_EN$ddDistrict")
-          district_element.send_keys(district)
-      
-          facility_element = br.find_element_by_name("ctl00$MainContent_EN$ddFacility")
-          facility_element.send_keys("All")
-      
-          facilitytype_element = br.find_element_by_name(
-              "ctl00$MainContent_EN$ddFacilityType"
-          )
-          facilitytype_element.send_keys("All Type")
-      
-          bedavail = br.find_element_by_name("ctl00$MainContent_EN$ddBedAva")
-          bedavail.send_keys("All")
-          
-          
-          submit = br.find_element_by_name("ctl00$MainContent_EN$Button2")
-          submit.click()
-          hospital_df = get_data_df(br)
-          hospital_df["district"] = district
-          dfs.append(hospital_df)
+          try:
+            district_element = br.find_element_by_name("ctl00$MainContent_EN$ddDistrict")
+            district_element.send_keys(district)
+        
+            facility_element = br.find_element_by_name("ctl00$MainContent_EN$ddFacility")
+            facility_element.send_keys("All")
+        
+            facilitytype_element = br.find_element_by_name(
+                "ctl00$MainContent_EN$ddFacilityType"
+            )
+            facilitytype_element.send_keys("All Type")
+        
+            bedavail = br.find_element_by_name("ctl00$MainContent_EN$ddBedAva")
+            bedavail.send_keys("All")
+            
+            
+            submit = br.find_element_by_name("ctl00$MainContent_EN$Button2")
+            submit.click()
+            hospital_df = get_data_df(br)
+            hospital_df["district"] = district
+            dfs.append(hospital_df)
+          except:
+            print('Failed for district: '+district)
         br.close()
         all_dfs = pd.concat(dfs)
         all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
