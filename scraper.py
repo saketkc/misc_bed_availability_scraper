@@ -448,7 +448,9 @@ if __name__=='__main__':
         options.add_argument("--ignore-certificate-errors")
         options.add_argument("--headless")
         br = webdriver.Chrome(chrome_options=options)
+        print('downloading main UP page..')
         br.get("https://beds.dgmhup-covid19.in/EN/covid19bedtrack")
+        print('downloaded main UP page..')
         soup = BeautifulSoup(br.page_source, "html.parser")
         select_districts = soup.find("select", {"id": "MainContent_EN_ddDistrict"})
         districts = [opt.text for opt in select_districts.find_all("option")][1:]
