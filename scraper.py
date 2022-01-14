@@ -328,8 +328,8 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya']:
-  for city in ['up']:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya','up,'manipur']:
+  for city in ['manipur']:
       print('running scraper for: '+city)
       date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     # ~ try:
@@ -491,6 +491,37 @@ if __name__=='__main__':
         
         all_dfs2=all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
         print(all_dfs2)
+      elif city=="manipur":
+        x=s.get_url_failsafe('https://nrhmmanipur.org/?page_id=5788')
+        links=[i['href'] for i in x.select('#content')[0]('a') if i.has_attr('href') and "status report of patients" in i.text.lower()]
+        if links: 
+          x=get_url_failsafe(links[0])
+          x=get_url_failsafe(links[0])
+        else: 
+          print('no links found for manipur')
+          continue
+        links=[i['href'] for i in x.select('#content')[0]('a') if i.has_attr('href') and "click here" in i.text.lower()]
+        if links: 
+          # ~ get_url_failsafe(links[0],out='manipur_'+str(date_str)+'.pdf')
+          #pdf redirects, does not download directly
+          os.system('wget "'+links[0]+'" "manipur_'+str(date_str)+'.pdf"')
+          x=read_pdf('manipur_'+str(date_str)+'.pdf',silent=True,pages=1)
+          x=x[0]
+          raw_line = " ".join([x.strip() for x in list(x.iloc[len(x) - 2]) if str(x)!='nan'])
+          raw_line=[i for i in raw_line.split() if i.isnumeric()]
+          tot_normal,tot_icu=raw_line[:2]
+          vacant_normal,vacant_icu,vacant_all=raw_line[-3:]
+          occupied_normal=int(tot_normal)-int(vacant_normal)
+          occupied_icu=int(tot_icu)-int(vacant_icu)
+          report_date=os.path.split(links[0])[1]
+          report_date=report_date.split('Report_')[1].split('_')[0]
+          report_date_str=datetime.datetime.strptime(report_date,'%d-%m-%Y').strftime('%Y-%m-%d')
+          row=(report_date_str,tot_all,tot_occupied)
+          print(city+':');      print(row)
+        else: 
+          print('no links (in download area) found for manipur')
+          continue
+        os.system('rm -v *pdf')
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
         print("Downloading pdf..." + megh_pdf)
@@ -1028,7 +1059,7 @@ if __name__=='__main__':
           print('Appended to data.chennai.csv: '+info)        
       
       #generic writer for most cities
-      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya']:
+      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya','manipur']:
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
