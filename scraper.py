@@ -457,7 +457,7 @@ if __name__=='__main__':
         # br.close()
         dfs = []
         
-        pbar=tqdm.tqdm(districts,description='parsing for UP district: '+districts[0])
+        pbar=tqdm.tqdm(districts)
         for district in pbar:
           pbar.set_description('parsing for UP district: '+district)
           district_element = br.find_element_by_name("ctl00$MainContent_EN$ddDistrict")
