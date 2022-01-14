@@ -40,12 +40,12 @@ def get_url_failsafe(u,out='',timeout=25):
     else:x=os.popen('curl --max-time '+str(2*timeout)+' -x '+global_proxy+' -# -k "'+u+'"').read()
     if out and os.path.exists(out): x=True
     tries+=1
-  if (not out) and x: 
-    soup=BeautifulSoup(x,'html.parser')
-    return soup
-  else:
-    if out and not os.path.exists(out): print('Failed to save url:%s to file: %s' %(u,out))
+  if not out: 
+    if x: soup=BeautifulSoup(x,'html.parser');    return soup
     else: print('Failed to download website: %s either directly(curl) or via proxy!!' %(u))
+  else:
+    if not os.path.exists(out): print('Failed to save url:%s to file: %s' %(u,out))
+    
 def tamil_nadu_bulletin_parser(bulletin='',return_page_range=False,clip_bulletin=False,return_date=False,dump_clippings=False,return_beds_page=False,return_district_tpr_page=False):
   cmd='pdftotext  -layout "'+bulletin+'" tmp.txt';os.system(cmd)
   # ~ b=[i for i in open('tmp.txt').readlines() if i]
@@ -428,10 +428,9 @@ if __name__=='__main__':
             tot_occupied,
             tot_vacant
         ) = raw_line.split(" ")[1:]
+        os.system('rm -v *pdf')
         row=(report_date_str,tot_all,tot_occupied)
         print(city+':');      print(row)
-
-
 
       elif city=="jharkhand":
         soup = get_url_failsafe("http://jrhms.jharkhand.gov.in/news-press-releases")
@@ -476,7 +475,7 @@ if __name__=='__main__':
               report_date_str = unquote(l).split("/")[-1].split(".pdf")[0].split(" ")[0]
               report_date_str = datetime.datetime.strptime(report_date_str, "%d-%m-%Y").date().strftime("%Y-%m-%d")
   
-                
+        os.system('rm -v *pdf')
         row=(report_date_str,tot_o2,tot_icu,tot_vent,occupied_o2,occupied_icu,occupied_vent)
         print(city+':');      print(row)
       elif city=='jamshedpur':
