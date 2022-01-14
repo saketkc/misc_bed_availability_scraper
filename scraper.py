@@ -329,7 +329,7 @@ if __name__=='__main__':
   
   failed_cities=[]
   # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya','up,'manipur']:
-  for city in ['manipur']:
+  for city in ['up']:
       print('running scraper for: '+city)
       date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     # ~ try:
@@ -490,6 +490,7 @@ if __name__=='__main__':
         all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
         
         all_dfs2=all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
+        all_dfs.to_pickle('tmp.pickle')
         print(all_dfs2)
       elif city=="manipur":
         x=get_url_failsafe('https://nrhmmanipur.org/?page_id=5788')
