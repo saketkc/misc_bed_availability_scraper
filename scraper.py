@@ -489,8 +489,8 @@ if __name__=='__main__':
         
         all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
         
-        all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
-        print(all_dfs)
+        all_dfs2=all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
+        print(all_dfs2)
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
         print("Downloading pdf..." + megh_pdf)
