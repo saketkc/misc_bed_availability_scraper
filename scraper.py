@@ -490,8 +490,13 @@ if __name__=='__main__':
         all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
         
         all_dfs2=all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]].groupby("last_updated_date").agg(sum)
-        all_dfs.to_pickle('tmp.pickle')
-        print(all_dfs2)
+        tot_normal,occupied_normal=all_dfs2[-3:].sum()
+        row=(date_str,tot_normal,occupied_normal)
+        print(city+':');      print(row)
+
+        
+        # ~ all_dfs.to_pickle('tmp.pickle')
+        # ~ print(all_dfs2)
       elif city=="manipur":
         x=get_url_failsafe('https://nrhmmanipur.org/?page_id=5788')
         links=[i['href'] for i in x.select('#content')[0]('a') if i.has_attr('href') and "status report of patients" in i.text.lower()]
@@ -1060,7 +1065,7 @@ if __name__=='__main__':
           print('Appended to data.chennai.csv: '+info)        
       
       #generic writer for most cities
-      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya','manipur']:
+      if city in ['mp','hp','pune','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya','manipur','up']:
         csv_fname='data.'+city+'.csv'
         a=open(csv_fname);r=csv.reader(a);info=[i for i in r];a.close()
         dates=list(set([i[0] for i in info[1:]]));dates.sort()
