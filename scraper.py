@@ -30,6 +30,38 @@ def highlight(text):
   highlight_reset=colorama.Back.RESET+colorama.Fore.RESET+colorama.Style.RESET_ALL
   return highlight_begin+text+highlight_reset
 
+
+def get_data_df(br):
+    soup = BeautifulSoup(br.page_source, "html.parser")
+    table = soup.find(
+        "table",
+        {
+            "class": "style92",
+            "style": "border-collapse: separate; border: solid black 1px; border-radius: 6px; -moz-border-radius: 6px;",
+        },
+    )
+
+    rows = table.find_all("tr")
+    ids = [x.get("id") for x in rows]
+    ids_to_subset = [id for id in ids if id and id.endswith("_1")]
+    data = []
+    for row in rows:
+        if row.get("id") in ids_to_subset:
+            cols = row.find_all("td")
+            cols = [ele.text.strip().replace("\n", " ") for ele in cols]
+            data.append([ele.strip() for ele in cols if ele])  # Get rid of empty values
+    data_df = pd.DataFrame(data)
+    data_df.columns = ["hospital", "total_beds", "available_beds", "last_updated"]
+    data_df.total_beds = data_df.total_beds.astype(int)
+    data_df.available_beds = data_df.available_beds.astype(int)
+
+    data_df["last_updated_date"] = pd.to_datetime(
+        data_df["last_updated"].str.split(" ").str.get(0), format="%d/%m/%Y"
+    )
+    data_df = data_df.sort_values(by="last_updated_date")
+
+    return data_df
+    
 def get_url_failsafe(u,out='',timeout=25):
   if out: x=os.popen('curl --max-time '+str(timeout)+' -# -k "'+u+'" -o "'+out+'"').read();
   else: x=os.popen('curl --max-time '+str(timeout)+' -# -k '+u).read();
@@ -296,8 +328,8 @@ if __name__=='__main__':
   
   
   failed_cities=[]
-  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand']:
-  for city in ['meghalaya','up']:
+  # ~ for city in ['bengaluru','hp','mp','chennai','pune','delhi','gbn','gurugram','tn','mumbai','chandigarh','uttarakhand','kerala','ap','telangana','nagpur','nashik','gandhinagar','vadodara','wb','pb','jammu','goa','bihar','rajasthan','ludhiana','jamshedpur','jharkhand','meghalaya']:
+  for city in ['up']:
       print('running scraper for: '+city)
       date=datetime.datetime.now();date_str=date.strftime('%Y-%m-%d')
     # ~ try:
@@ -411,6 +443,45 @@ if __name__=='__main__':
         row=(date_str,tot_normal,tot_o2,tot_icu,tot_vent,occupied_normal,occupied_o2,occupied_icu,occupied_vent)
         print(city+':')
         print(row)
+      elif city=="up":
+        options = webdriver.ChromeOptions()
+        options.add_argument("--ignore-certificate-errors")
+        options.add_argument("--headless")
+        br = webdriver.Chrome(chrome_options=options)
+        br.get("https://beds.dgmhup-covid19.in/EN/covid19bedtrack")
+        soup = BeautifulSoup(br.page_source, "html.parser")
+        select_districts = soup.find("select", {"id": "MainContent_EN_ddDistrict"})
+        districts = [opt.text for opt in select_districts.find_all("option")][1:]
+        # br.close()
+        dfs = []
+        
+        for district in districts:
+          district_element = br.find_element_by_name("ctl00$MainContent_EN$ddDistrict")
+          district_element.send_keys(district)
+      
+          facility_element = br.find_element_by_name("ctl00$MainContent_EN$ddFacility")
+          facility_element.send_keys("All")
+      
+          facilitytype_element = br.find_element_by_name(
+              "ctl00$MainContent_EN$ddFacilityType"
+          )
+          facilitytype_element.send_keys("All Type")
+      
+          bedavail = br.find_element_by_name("ctl00$MainContent_EN$ddBedAva")
+          bedavail.send_keys("All")
+          
+          
+          submit = br.find_element_by_name("ctl00$MainContent_EN$Button2")
+          submit.click()
+          hospital_df = get_data_df(br)
+          hospital_df["district"] = district
+          dfs.append(hospital_df)
+      br.close()
+      all_dfs = pd.concat(dfs)
+      all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
+      
+      all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
+      print(all_dfs)
       elif city=="meghalaya":
         megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
         print("Downloading pdf..." + megh_pdf)
