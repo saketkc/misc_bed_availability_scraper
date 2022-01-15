@@ -625,1099 +625,1063 @@ if __name__ == "__main__":
         print("running scraper for: " + city)
         date = datetime.datetime.now()
         date_str = date.strftime("%Y-%m-%d")
-        # ~ try:
-        if city == "bengaluru":
-            # BENGALURU
-
-            url = "https://apps.bbmpgov.in/Covid19/en/mediabulletin.php"
-
-            response = requests.get(url)
-            soup = BeautifulSoup(response.text, "html.parser")
-            links = soup.find_all("a")
-
-            for link in links:
-                if ".pdf" in link.get("href", []):
-                    print("Downloading pdf...")
-
-                    l = "https://apps.bbmpgov.in/Covid19/en/" + link.get(
-                        "href"
-                    ).replace(" ", "%20")
-                    print(l)
-                    response = requests.get(l)
-                    pdf = open("BLR_" + str(date_str) + ".pdf", "wb")
-                    pdf.write(response.content)
-                    pdf.close()
-                    break
-            # get date from bulletin
-            os.system("pdftotext -layout  BLR_" + str(date_str) + ".pdf t.txt")
-            b = [i.strip() for i in open("t.txt").readlines() if i.strip()]
-            date_line = [i for i in b if "WAR ROOM".lower() in i.lower()]
-            if not date_line:
-                print(
-                    "could not get date from bengaluru buletin BLR_"
-                    + str(date_str)
-                    + ".pdf !!"
-                )
-                sys.exit(1)
-            bulletin_date = datetime.datetime.strptime(
-                date_line[0].split("/")[-2].strip(), "%d.%m.%Y"
-            ).strftime("%Y-%m-%d")
-
-            # get page for bed status
-            page_count = 0
-            beds_page = 0
-            b = [i for i in open("t.txt").readlines() if i.strip()]
-            for i in b:
-                if "\x0c" in i:
-                    page_count += 1
-                if "COVID BED STATUS".lower() in i.lower():
-                    beds_page = page_count + 1
-                    break
-            # ~ print(beds_page)
-
-            # print(text)
-            tables = read_pdf(
-                "BLR_" + str(date_str) + ".pdf", pages=beds_page, silent=True
-            )
-            dff = tables[0]
-
-            results = []
-            raw_line = " ".join(
-                [str(i).replace(",", "") for i in list(dff.iloc[len(dff) - 1])]
-            )
-            x = [i for i in raw_line.split() if i.isnumeric()]
-            general_available, hdu_available, icu_available, ventilator_available = x[
-                1:5
-            ]
-            general_admitted, hdu_admitted, icu_admitted, ventilator_admitted = x[6:10]
-
-            a = open("data.bengaluru.csv")
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:]]))
-            dates.sort()
-
-            info = ", ".join(
-                (
-                    bulletin_date,
-                    str(general_available),
-                    str(general_admitted),
-                    str(hdu_available),
-                    str(hdu_admitted),
-                    str(icu_available),
-                    str(icu_admitted),
-                    str(ventilator_available),
-                    str(ventilator_admitted),
-                )
-            )
-
-            os.system("rm -vf BLR_" + str(date_str) + ".pdf *.pdf")
-            if bulletin_date in dates:
-                # ~ dont_update_data_csv=True
-                print(
-                    "----------\n\nData for %s already exists in data.bengaluru.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
-                    % (date_str)
-                )
-                print("bengaluru: " + str(info))
-            else:
-                # write to file
-
-                a = open("data.bengaluru.csv", "a")
-                a.write(info + "\n")
-                a.close()
-                print("Appended to data.bengaluru.csv: " + info)
-
-        elif city == "pgimer":
-            soup = get_url_failsafe(
-                "https://pgimer.edu.in/PGIMER_PORTAL/PGIMERPORTAL/GlobalPages/JSP/covidDashboardyy.jsp"
-            )
-
-            report_date = ",".join(
-                (
-                    ":".join(
-                        soup.select("#lblLast_Update")[0].text.split(":")[1:]
-                    ).split()
-                )[:3]
-            ).replace(",,", ",")
-            report_date_str = datetime.datetime.strptime(
-                report_date, "%b,%d,%Y"
-            ).strftime("%Y-%m-%d")
-            for body in soup("tbody"):
-                body.unwrap()
-            x = pd.read_html(str(soup), flavor="bs4")
-
-            icu, hdu, step_down, pediatric, others = list(
-                x[0].loc[len(x[0]) - 1].astype(int)
-            )
-
-            male, female = x[1].loc[len(x[1]) - 1].astype(int)
-
-            if x[2].loc[1][0].startswith("0"):  # 0-12 type
-                u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
-            else:  # 0,1-.. type
-                u1, u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
-                u12 += u1
-
-            chandigarh = punjab = haryana = himachal = other_states = 0
-
-            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Chandigarh"]
-            if y:
-                chandigarh = y[0]
-            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Punjab"]
-            if y:
-                punjab = y[0]
-            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Haryana"]
-            if y:
-                haryana = y[0]
-            y = [
-                i[1]
-                for i in x[3].to_dict("split")["data"]
-                if i[0] == "Himachal Pradesh"
-            ]
-            if y:
-                himachal = y[0]
-            y = [
-                i[1]
-                for i in x[3].to_dict("split")["data"]
-                if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
-            ]
-            if y:
-                other_states = sum([int(i) for i in y if i.isnumeric()])
-
-            (
-                cumulative_icu,
-                cumulative_hdu,
-                cumulative_step_down,
-                cumulative_pediatric,
-                cumulative_others,
-            ) = list(x[4].loc[len(x[4]) - 1].astype(int))
-
-            cumulative_male, cumulative_female = x[5].loc[len(x[5]) - 1].astype(int)
-
-            if x[6].loc[1][0].startswith("0"):  # 0-12 type
-                (
-                    cumulative_u12,
-                    cumulative_u40,
-                    cumulative_u60,
-                    cumulative_u80,
-                    cumulative_plus80,
-                ) = list(x[6].loc[2].astype(int))
-            else:  # 0,1-.. type
-                (
-                    cumulative_u1,
-                    cumulative_u12,
-                    cumulative_u40,
-                    cumulative_u60,
-                    cumulative_u80,
-                    cumulative_plus80,
-                ) = list(x[6].loc[2].astype(int))
-                cumulative_u12 += cumulative_u1
-
-            cumulative_chandigarh = (
-                cumulative_punjab
-            ) = cumulative_haryana = cumulative_himachal = cumulative_other_states = 0
-
-            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Chandigarh"]
-            if y:
-                cumulative_chandigarh = y[0]
-            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Punjab"]
-            if y:
-                cumulative_punjab = y[0]
-            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Haryana"]
-            if y:
-                cumulative_haryana = y[0]
-            y = [
-                i[1]
-                for i in x[7].to_dict("split")["data"]
-                if i[0] == "Himachal Pradesh"
-            ]
-            if y:
-                cumulative_himachal = y[0]
-            y = [
-                i[1]
-                for i in x[7].to_dict("split")["data"]
-                if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
-            ]
-            if y:
-                cumulative_other_states = sum([int(i) for i in y if i.isnumeric()])
-
-            discharged, deaths, d2, d3 = x[8].loc[2].astype(int).unique()
-            deaths += d2 + d3
-
-            row = (
-                report_date_str,
-                icu,
-                hdu,
-                step_down,
-                pediatric,
-                others,
-                male,
-                female,
-                u12,
-                u40,
-                u60,
-                u80,
-                plus80,
-                chandigarh,
-                punjab,
-                haryana,
-                himachal,
-                other_states,
-                cumulative_icu,
-                cumulative_hdu,
-                cumulative_step_down,
-                cumulative_pediatric,
-                cumulative_others,
-                cumulative_male,
-                cumulative_female,
-                cumulative_u12,
-                cumulative_u40,
-                cumulative_u60,
-                cumulative_u80,
-                cumulative_plus80,
-                cumulative_chandigarh,
-                cumulative_punjab,
-                cumulative_haryana,
-                cumulative_himachal,
-                cumulative_other_states,
-                discharged,
-                deaths,
-            )
-            print(city + ":")
-            print(row)
-
-        elif city == "pb":
-            soup = get_url_failsafe(
-                "https://phsc.punjab.gov.in/en/covid-19-notifications"
-            )
-            links = [
-                i["href"]
-                for i in soup("a")
-                if i.has_attr("href") and ".xlsx" in i["href"]
-            ]
-            link_date = [
-                i.text for i in soup("a") if i.has_attr("href") and ".xlsx" in i["href"]
-            ][0]
-            date_str = datetime.datetime.strptime(
-                link_date.split()[link_date.split().index("on") + 1], "%d-%m-%Y"
-            ).strftime("%Y-%m-%d")
-
-            os.system('curl -# -k "' + links[0] + '" -o tmp.xlsx')
-            os.system("ssconvert tmp.xlsx tmp.csv")
-            x = pd.read_csv("tmp.csv")
-            summary = list(x.iloc[len(x) - 1][3:-4])
-            tot_o2 = int(summary[0])
-            tot_icu = int(summary[8])
-            tot_vent = int(summary[13])
-            occupied_normal = int(summary[3]) + int(summary[5])
-            occupied_o2 = int(summary[0]) - int(summary[1])
-            occupied_icu = int(summary[8]) - int(summary[9])
-            occupied_vent = int(summary[13]) - int(summary[14])
-
-            os.system('curl -# -k "' + links[1] + '" -o tmp.xlsx')
-            os.system("ssconvert tmp.xlsx tmp.csv")
-            x = pd.read_csv("tmp.csv")
-            summary = list(x.iloc[len(x) - 1][3:-4])
-            tot_o2 += int(summary[0])
-            tot_icu += int(summary[8])
-            tot_vent += int(summary[13])
-            occupied_normal += int(summary[3]) + int(summary[5])
-            occupied_o2 += int(summary[0]) - int(summary[1])
-            occupied_icu += int(summary[8]) - int(summary[9])
-            occupied_vent += int(summary[13]) - int(summary[14])
-            os.system("rm -vf tmp.csv tmp.xlsx")
-
-            row = (
-                date_str,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-
-        elif city == "tn":
-            tamil_nadu_auto_parse_latest_bulletin()
-        elif city == "gurugram":
-            gurugram_auto_parse_latest_bulletin()
-        elif city == "rajasthan":
-            soup = get_url_failsafe(
-                "https://covidinfo.rajasthan.gov.in/Covid-19hospital-wisebedposition-wholeRajasthan.aspx",
-                75,
-            )
-            hosp = [
-                " ".join([j.text for j in row("td")]) for row in soup("table")[0]("tr")
-            ][3:]
-            recent_update = [
-                i
-                for i in hosp
-                if i.split()[-1] != "N/A"
-                and datetime.datetime.strptime(i.split()[-2], "%d-%m-%Y")
-                >= datetime.datetime.now() - datetime.timedelta(days=2)
-            ]
-            tot_normal = 0
-            tot_o2 = 0
-            tot_icu = 0
-            tot_vent = 0
-            occupied_normal = 0
-            occupied_o2 = 0
-            occupied_icu = 0
-            occupied_vent = 0
-            for i in recent_update:
-                try:
-                    (
-                        tot_normal0,
-                        occupied_normal0,
-                        x1,
-                        tot_o20,
-                        occupied_o20,
-                        x2,
-                        tot_icu0,
-                        occupied_icu0,
-                        x3,
-                        tot_vent0,
-                        occupied_vent0,
-                        x4,
-                    ) = i.split()[-16:-4]
-                    tot_normal += int(tot_normal0)
-                    tot_o2 += int(tot_o20)
-                    tot_icu += int(tot_icu0)
-                    tot_vent += int(tot_vent0)
-                    occupied_normal += int(occupied_normal0)
-                    occupied_o2 += int(occupied_o20)
-                    occupied_icu += int(occupied_icu0)
-                    occupied_vent += int(occupied_vent0)
-                except:
-                    print("in parsing rajasthan failed for hospital " + str(i))
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "up":
-            options = webdriver.ChromeOptions()
-            options.add_argument("--ignore-certificate-errors")
-            options.add_argument("--headless")
-            br = webdriver.Chrome(chrome_options=options)
-            # ~ print('downloading main UP page..')
-            br.get("https://beds.dgmhup-covid19.in/EN/covid19bedtrack")
-            # ~ print('downloaded main UP page..')
-            soup = BeautifulSoup(br.page_source, "html.parser")
-            select_districts = soup.find("select", {"id": "MainContent_EN_ddDistrict"})
-            districts = [opt.text for opt in select_districts.find_all("option")][1:]
-            # br.close()
-            dfs = []
-
-            pbar = tqdm.tqdm(districts)
-            for district in pbar:
-                pbar.set_description("parsing for UP district: " + district)
-                try:
-                    district_element = br.find_element_by_name(
-                        "ctl00$MainContent_EN$ddDistrict"
+        try:
+            if city == "bengaluru":
+                # BENGALURU
+    
+                url = "https://apps.bbmpgov.in/Covid19/en/mediabulletin.php"
+    
+                response = requests.get(url)
+                soup = BeautifulSoup(response.text, "html.parser")
+                links = soup.find_all("a")
+    
+                for link in links:
+                    if ".pdf" in link.get("href", []):
+                        print("Downloading pdf...")
+    
+                        l = "https://apps.bbmpgov.in/Covid19/en/" + link.get(
+                            "href"
+                        ).replace(" ", "%20")
+                        print(l)
+                        response = requests.get(l)
+                        pdf = open("BLR_" + str(date_str) + ".pdf", "wb")
+                        pdf.write(response.content)
+                        pdf.close()
+                        break
+                # get date from bulletin
+                os.system("pdftotext -layout  BLR_" + str(date_str) + ".pdf t.txt")
+                b = [i.strip() for i in open("t.txt").readlines() if i.strip()]
+                date_line = [i for i in b if "WAR ROOM".lower() in i.lower()]
+                if not date_line:
+                    print(
+                        "could not get date from bengaluru buletin BLR_"
+                        + str(date_str)
+                        + ".pdf !!"
                     )
-                    district_element.send_keys(district)
-
-                    facility_element = br.find_element_by_name(
-                        "ctl00$MainContent_EN$ddFacility"
-                    )
-                    facility_element.send_keys("All")
-
-                    facilitytype_element = br.find_element_by_name(
-                        "ctl00$MainContent_EN$ddFacilityType"
-                    )
-                    facilitytype_element.send_keys("All Type")
-
-                    bedavail = br.find_element_by_name("ctl00$MainContent_EN$ddBedAva")
-                    bedavail.send_keys("All")
-
-                    submit = br.find_element_by_name("ctl00$MainContent_EN$Button2")
-                    submit.click()
-                    hospital_df = get_data_df(br)
-                    hospital_df["district"] = district
-                    dfs.append(hospital_df)
-                except:
-                    print("Failed for district: " + district)
-            br.close()
-            all_dfs = pd.concat(dfs)
-            all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
-
-            all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
-
-            all_dfs2 = (
-                all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]]
-                .groupby("last_updated_date")
-                .agg(sum)
-            )
-            tot_normal, occupied_normal = all_dfs2[-3:].sum()
-            row = (date_str, tot_normal, occupied_normal)
-            print(city + ":")
-            print(row)
-
-            # ~ all_dfs.to_pickle('tmp.pickle')
-            # ~ print(all_dfs2)
-        elif city == "manipur":
-            x = get_url_failsafe("https://nrhmmanipur.org/?page_id=5788")
-            links = [
-                i["href"]
-                for i in x.select("#content")[0]("a")
-                if i.has_attr("href") and "status report of patients" in i.text.lower()
-            ]
-            if links:
-                x = get_url_failsafe(links[0])
-                x = get_url_failsafe(links[0])
-            else:
-                print("no links found for manipur")
-                continue
-            links = [
-                i["href"]
-                for i in x.select("#content")[0]("a")
-                if i.has_attr("href") and "click here" in i.text.lower()
-            ]
-            if links:
-                # ~ get_url_failsafe(links[0],out='manipur_'+str(date_str)+'.pdf')
-                # pdf redirects, does not download directly
-                os.system(
-                    'wget "' + links[0] + '" -O "manipur_' + str(date_str) + '.pdf"'
-                )
-                x = read_pdf("manipur_" + str(date_str) + ".pdf", silent=True, pages=1)
-                x = x[0]
-                raw_line = " ".join(
-                    [
-                        str(x).split(".")[0].strip()
-                        for x in list(x.iloc[len(x) - 2])
-                        if str(x) != "nan"
-                    ]
-                )
-                raw_line = [i for i in raw_line.split() if i.isnumeric()]
-                tot_normal, tot_icu = raw_line[:2]
-                vacant_normal, vacant_icu, vacant_all = raw_line[-3:]
-                occupied_normal = int(tot_normal) - int(vacant_normal)
-                occupied_icu = int(tot_icu) - int(vacant_icu)
-                report_date = os.path.split(links[0])[1]
-                report_date = report_date.split("Report_")[1].split("_")[0]
-                report_date_str = datetime.datetime.strptime(
-                    report_date, "%d-%m-%Y"
+                    sys.exit(1)
+                bulletin_date = datetime.datetime.strptime(
+                    date_line[0].split("/")[-2].strip(), "%d.%m.%Y"
                 ).strftime("%Y-%m-%d")
+    
+                # get page for bed status
+                page_count = 0
+                beds_page = 0
+                b = [i for i in open("t.txt").readlines() if i.strip()]
+                for i in b:
+                    if "\x0c" in i:
+                        page_count += 1
+                    if "COVID BED STATUS".lower() in i.lower():
+                        beds_page = page_count + 1
+                        break
+                # ~ print(beds_page)
+    
+                # print(text)
+                tables = read_pdf(
+                    "BLR_" + str(date_str) + ".pdf", pages=beds_page, silent=True
+                )
+                dff = tables[0]
+    
+                results = []
+                raw_line = " ".join(
+                    [str(i).replace(",", "") for i in list(dff.iloc[len(dff) - 1])]
+                )
+                x = [i for i in raw_line.split() if i.isnumeric()]
+                general_available, hdu_available, icu_available, ventilator_available = x[
+                    1:5
+                ]
+                general_admitted, hdu_admitted, icu_admitted, ventilator_admitted = x[6:10]
+    
+                a = open("data.bengaluru.csv")
+                r = csv.reader(a)
+                info = [i for i in r]
+                a.close()
+                dates = list(set([i[0] for i in info[1:]]))
+                dates.sort()
+    
+                info = ", ".join(
+                    (
+                        bulletin_date,
+                        str(general_available),
+                        str(general_admitted),
+                        str(hdu_available),
+                        str(hdu_admitted),
+                        str(icu_available),
+                        str(icu_admitted),
+                        str(ventilator_available),
+                        str(ventilator_admitted),
+                    )
+                )
+    
+                os.system("rm -vf BLR_" + str(date_str) + ".pdf *.pdf")
+                if bulletin_date in dates:
+                    # ~ dont_update_data_csv=True
+                    print(
+                        "----------\n\nData for %s already exists in data.bengaluru.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
+                        % (date_str)
+                    )
+                    print("bengaluru: " + str(info))
+                else:
+                    # write to file
+    
+                    a = open("data.bengaluru.csv", "a")
+                    a.write(info + "\n")
+                    a.close()
+                    print("Appended to data.bengaluru.csv: " + info)
+    
+            elif city == "pgimer":
+                soup = get_url_failsafe(
+                    "https://pgimer.edu.in/PGIMER_PORTAL/PGIMERPORTAL/GlobalPages/JSP/covidDashboardyy.jsp"
+                )
+    
+                report_date = ",".join(
+                    (
+                        ":".join(
+                            soup.select("#lblLast_Update")[0].text.split(":")[1:]
+                        ).split()
+                    )[:3]
+                ).replace(",,", ",")
+                report_date_str = datetime.datetime.strptime(
+                    report_date, "%b,%d,%Y"
+                ).strftime("%Y-%m-%d")
+                for body in soup("tbody"):
+                    body.unwrap()
+                x = pd.read_html(str(soup), flavor="bs4")
+    
+                icu, hdu, step_down, pediatric, others = list(
+                    x[0].loc[len(x[0]) - 1].astype(int)
+                )
+    
+                male, female = x[1].loc[len(x[1]) - 1].astype(int)
+    
+                if x[2].loc[1][0].startswith("0"):  # 0-12 type
+                    u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
+                else:  # 0,1-.. type
+                    u1, u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
+                    u12 += u1
+    
+                chandigarh = punjab = haryana = himachal = other_states = 0
+    
+                y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Chandigarh"]
+                if y:
+                    chandigarh = y[0]
+                y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Punjab"]
+                if y:
+                    punjab = y[0]
+                y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Haryana"]
+                if y:
+                    haryana = y[0]
+                y = [
+                    i[1]
+                    for i in x[3].to_dict("split")["data"]
+                    if i[0] == "Himachal Pradesh"
+                ]
+                if y:
+                    himachal = y[0]
+                y = [
+                    i[1]
+                    for i in x[3].to_dict("split")["data"]
+                    if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
+                ]
+                if y:
+                    other_states = sum([int(i) for i in y if i.isnumeric()])
+    
+                (
+                    cumulative_icu,
+                    cumulative_hdu,
+                    cumulative_step_down,
+                    cumulative_pediatric,
+                    cumulative_others,
+                ) = list(x[4].loc[len(x[4]) - 1].astype(int))
+    
+                cumulative_male, cumulative_female = x[5].loc[len(x[5]) - 1].astype(int)
+    
+                if x[6].loc[1][0].startswith("0"):  # 0-12 type
+                    (
+                        cumulative_u12,
+                        cumulative_u40,
+                        cumulative_u60,
+                        cumulative_u80,
+                        cumulative_plus80,
+                    ) = list(x[6].loc[2].astype(int))
+                else:  # 0,1-.. type
+                    (
+                        cumulative_u1,
+                        cumulative_u12,
+                        cumulative_u40,
+                        cumulative_u60,
+                        cumulative_u80,
+                        cumulative_plus80,
+                    ) = list(x[6].loc[2].astype(int))
+                    cumulative_u12 += cumulative_u1
+    
+                cumulative_chandigarh = (
+                    cumulative_punjab
+                ) = cumulative_haryana = cumulative_himachal = cumulative_other_states = 0
+    
+                y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Chandigarh"]
+                if y:
+                    cumulative_chandigarh = y[0]
+                y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Punjab"]
+                if y:
+                    cumulative_punjab = y[0]
+                y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Haryana"]
+                if y:
+                    cumulative_haryana = y[0]
+                y = [
+                    i[1]
+                    for i in x[7].to_dict("split")["data"]
+                    if i[0] == "Himachal Pradesh"
+                ]
+                if y:
+                    cumulative_himachal = y[0]
+                y = [
+                    i[1]
+                    for i in x[7].to_dict("split")["data"]
+                    if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
+                ]
+                if y:
+                    cumulative_other_states = sum([int(i) for i in y if i.isnumeric()])
+    
+                discharged, deaths, d2, d3 = x[8].loc[2].astype(int).unique()
+                deaths += d2 + d3
+    
                 row = (
                     report_date_str,
-                    tot_normal,
-                    tot_icu,
-                    occupied_normal,
-                    occupied_icu,
+                    icu,
+                    hdu,
+                    step_down,
+                    pediatric,
+                    others,
+                    male,
+                    female,
+                    u12,
+                    u40,
+                    u60,
+                    u80,
+                    plus80,
+                    chandigarh,
+                    punjab,
+                    haryana,
+                    himachal,
+                    other_states,
+                    cumulative_icu,
+                    cumulative_hdu,
+                    cumulative_step_down,
+                    cumulative_pediatric,
+                    cumulative_others,
+                    cumulative_male,
+                    cumulative_female,
+                    cumulative_u12,
+                    cumulative_u40,
+                    cumulative_u60,
+                    cumulative_u80,
+                    cumulative_plus80,
+                    cumulative_chandigarh,
+                    cumulative_punjab,
+                    cumulative_haryana,
+                    cumulative_himachal,
+                    cumulative_other_states,
+                    discharged,
+                    deaths,
                 )
                 print(city + ":")
                 print(row)
-            else:
-                print("no links (in download area) found for manipur")
-                continue
-            os.system("rm -v *pdf")
-        elif city == "meghalaya":
-            megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
-            print("Downloading pdf..." + megh_pdf)
-            x = get_url_failsafe(
-                megh_pdf, out="Meghalaya_" + str(date_str) + ".pdf", timeout=20
-            )
-            try:
-                tables = read_pdf(
-                    "Meghalaya_" + str(date_str) + ".pdf", pages=1, silent=True
+    
+            elif city == "pb":
+                soup = get_url_failsafe(
+                    "https://phsc.punjab.gov.in/en/covid-19-notifications"
                 )
-            except CalledProcessError:
-                pass
-            dff = tables[0]
-            if "COVID STATUS IN HOSPITALS IN THE STATE AS ON" in dff.columns[1]:
-                report_date_str = dff.columns[1].split(" ")[-1].replace(".", "-")
-                report_date_str = (
-                    datetime.datetime.strptime(report_date_str, "%d-%m-%Y")
-                    .date()
-                    .strftime("%Y-%m-%d")
-                )
-            raw_line = " ".join(
-                [x.strip() for x in list(dff.iloc[len(dff) - 1]) if str(x) != "nan"]
-            )
-            (
-                beds_without_o2,
-                tot_o2,
-                tot_icu,
-                tot_all,
-                tot_occupied,
-                tot_vacant,
-            ) = raw_line.split(" ")[1:]
-            os.system("rm -v *pdf")
-            row = (report_date_str, tot_all, tot_occupied)
-            print(city + ":")
-            print(row)
-
-        elif city == "jharkhand":
-            soup = get_url_failsafe("http://jrhms.jharkhand.gov.in/news-press-releases")
-            links = soup.find_all("a", {"target": "_blank"})
-            date = datetime.datetime.now()
-            date_str = date.strftime("%Y-%m-%d")
-            downloaded_first_pdf = False
-
-            for link in links:
-                if downloaded_first_pdf:
-                    break
-                if ".pdf" in link.get("href", []):
-                    print("Downloading pdf...")
-                    l = "http://jrhms.jharkhand.gov.in/" + link.get("href")
-                    print(l)
-                    get_url_failsafe(l, out="Jharkhand_" + str(date_str) + ".pdf")
-                    # ~ response = requests.get(l)
-                    # ~ pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
-                    # ~ pdf.write(response.content)
-                    # ~ pdf.close()
-                    downloaded_first_pdf = True
-
-                    try:
-                        tables = read_pdf(
-                            "Jharkhand_" + str(date_str) + ".pdf", pages=2, silent=True
-                        )
-                    except CalledProcessError:
-                        print("CalledProcessError when parsing Jharkhand pdf!")
-                        continue
-                    dff = tables[0]
-
-                    if "Bed Status" in " ".join(dff.columns):
-                        raw_line = " ".join(list(dff.iloc[len(dff) - 1])).strip()
-
-                        (
-                            tot_o2,
-                            occupied_o2,
-                            tot_icu,
-                            occupied_icu,
-                            tot_vent,
-                            occupied_vent,
-                        ) = raw_line.split(" ")[-6:]
-
-                        report_date_str = (
-                            unquote(l).split("/")[-1].split(".pdf")[0].split(" ")[0]
-                        )
-                        report_date_str = (
-                            datetime.datetime.strptime(report_date_str, "%d-%m-%Y")
-                            .date()
-                            .strftime("%Y-%m-%d")
-                        )
-
-            os.system("rm -v *pdf")
-            row = (
-                report_date_str,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "jamshedpur":
-            options = webdriver.ChromeOptions()
-            options.add_argument("--ignore-certificate-errors")
-            options.add_argument("--headless")
-            br = webdriver.Chrome(chrome_options=options)
-            br.get("https://xlri.edu/covid19/bed-status/")
-            soup = BeautifulSoup(br.page_source, "html.parser")
-            cards = soup.select(".card")
-            vacant_normal, tot_normal = cards[0]("p")[1].text.split("/")
-            occupied_normal = int(tot_normal) - int(vacant_normal)
-            vacant_o2, tot_o2 = cards[1]("p")[1].text.split("/")
-            occupied_o2 = int(tot_o2) - int(vacant_o2)
-            vacant_icu, tot_icu = cards[2]("p")[1].text.split("/")
-            occupied_icu = int(tot_icu) - int(vacant_icu)
-            vacant_vent, tot_vent = cards[3]("p")[1].text.split("/")
-            occupied_vent = int(tot_vent) - int(vacant_vent)
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "bihar":
-            soup = get_url_failsafe(
-                "https://covid19health.bihar.gov.in/DailyDashboard/BedsOccupied", 60
-            )
-            datasets = get_dataset_from_html_table(soup("table")[0])
-
-            regularly_updated = [
-                "MADHEPURA",
-                "PATNA",
-                "BHAGALPUR",
-                "DARBHANGA",
-                "MUZAFFARPUR",
-            ]
-            hosp = [
-                i for i in datasets if i[0][1] in regularly_updated and i[3][1] == "DCH"
-            ]
-
-            tot_beds = 0
-            vacant_beds = 0
-            tot_icu = 0
-            vacant_icu = 0
-            for i in hosp:
-                tot_beds += int(i[5][1])
-                vacant_beds += int(i[6][1])
-                tot_icu += int(i[7][1])
-                vacant_icu += int(i[8][1])
-            occupied_beds = tot_beds - vacant_beds
-            occupied_icu = tot_icu - vacant_icu
-
-            row = (date_str, tot_beds, tot_icu, occupied_beds, occupied_icu)
-            print(city + ":")
-            print(row)
-
-        elif city == "gandhinagar":
-            x = os.popen(
-                "curl --max-time 20 -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx"
-            ).read()
-            tries = 0
-            while (not x) and tries < 10:
-                x = os.popen(
-                    "curl --max-time 60 -x "
-                    + global_proxy
-                    + " -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx"
-                ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            x1, x2, x3, vt, vo, vv, it, io, iv, ot, oo, ov, nt, no, nv = [
-                i.text
-                for i in soup("table")[0]("span")
-                if i.has_attr("id") and i["id"].startswith("lb")
-            ]
-            row = (date_str, nt, ot, it, vt, no, oo, io, vo)
-            print(city + ":")
-            print(row)
-
-        elif city == "vadodara":
-            x = os.popen(
-                "curl --max-time 20 -# -k  https://vmc.gov.in/covid19vadodaraapp/Default.aspx"
-            ).read()
-            tries = 0
-            while (not x) and tries < 10:
-                x = os.popen(
-                    "curl --max-time 60 -x "
-                    + global_proxy
-                    + " -# -k https://vmc.gov.in/covid19vadodaraapp/Default.aspx"
-                ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            x1, x2, x3, vt, vo, vv, it, io, iv, ot, oo, ov, nt, no, nv, x5 = [
-                i.text
-                for i in soup("table")[0]("span")
-                if i.has_attr("id") and i["id"].startswith("lb")
-            ]
-            row = (date_str, nt, ot, it, vt, no, oo, io, vo)
-            print(city + ":")
-            print(row)
-        elif city == "ct":
-            pass
-        elif city == "wb":
-            x = os.popen(
-                "curl --max-time 15 -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx"
-            ).read()
-            tries = 0
-            while (not x) and tries < 10:
-                x = os.popen(
-                    "curl --max-time 60 -x "
-                    + global_proxy
-                    + " -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx"
-                ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            x1, nc, nv, x2 = [
-                i.text.strip() for i in soup("span", attrs={"class": "counter"})
-            ]
-            no = int(nc) - int(nv)
-            row = (date_str, nc, no)
-            print(city + ":")
-            print(row)
-        elif city == "nashik":
-            x = os.popen(
-                "curl --max-time 15 -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary"
-            ).read()
-            tries = 0
-            while (not x) and tries < 10:
-                x = os.popen(
-                    "curl --max-time 60 -x "
-                    + global_proxy
-                    + " -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary"
-                ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            x1, x2, x3, x4, nt, nv, ot, ov, it, iv, vt, vv = [
-                i.text.strip() for i in soup("tfoot")[0]("th")
-            ]
-            no = int(nt) - int(nv)
-            oo = int(ot) - int(ov)
-            io = int(it) - int(iv)
-            vo = int(vt) - int(vv)
-            row = (date_str, nt, ot, it, vt, no, oo, io, vo)
-            print(city + ":")
-            print(row)
-        elif city == "goa":
-            soup = get_url_failsafe("https://goaonline.gov.in/beds")
-            table = soup("table")[1]
-            headings = [th.get_text() for th in table.find("tr").find_all("th")]
-            datasets = []
-            for row in table.find_all("tr")[1:]:
-                dataset = list(
-                    zip(headings, (td.get_text() for td in row.find_all("td")))
-                )
-                datasets.append(dataset)
-            # rest of hosp. not updated
-            x = [
-                i
-                for i in datasets
-                if i[1][1]
-                in [
-                    "Goa Medical College & Hospital, Bambolim",
-                    "Victor Hospital, Margao",
+                links = [
+                    i["href"]
+                    for i in soup("a")
+                    if i.has_attr("href") and ".xlsx" in i["href"]
                 ]
-            ]
-            tot_normal = sum([int(i[2][1]) for i in x])
-            vacant_normal = sum([int(i[3][1]) for i in x])
-            occupied_normal = tot_normal - vacant_normal
-            tot_icu = sum([int(i[4][1]) for i in x])
-            vacant_icu = sum([int(i[5][1]) for i in x])
-            occupied_icu = tot_icu - vacant_icu
-            row = (date_str, tot_normal, tot_icu, occupied_normal, occupied_icu)
-            print(city + ":")
-            print(row)
-        elif city == "jammu":
-            x = os.popen(
-                "curl --max-time 30 -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU"
-            ).read()
-            tries = 0
-            while (not x) and tries < 10:
+                link_date = [
+                    i.text for i in soup("a") if i.has_attr("href") and ".xlsx" in i["href"]
+                ][0]
+                date_str = datetime.datetime.strptime(
+                    link_date.split()[link_date.split().index("on") + 1], "%d-%m-%Y"
+                ).strftime("%Y-%m-%d")
+    
+                os.system('curl -# -k "' + links[0] + '" -o tmp.xlsx')
+                os.system("ssconvert tmp.xlsx tmp.csv")
+                x = pd.read_csv("tmp.csv")
+                summary = list(x.iloc[len(x) - 1][3:-4])
+                tot_o2 = int(summary[0])
+                tot_icu = int(summary[8])
+                tot_vent = int(summary[13])
+                occupied_normal = int(summary[3]) + int(summary[5])
+                occupied_o2 = int(summary[0]) - int(summary[1])
+                occupied_icu = int(summary[8]) - int(summary[9])
+                occupied_vent = int(summary[13]) - int(summary[14])
+    
+                os.system('curl -# -k "' + links[1] + '" -o tmp.xlsx')
+                os.system("ssconvert tmp.xlsx tmp.csv")
+                x = pd.read_csv("tmp.csv")
+                summary = list(x.iloc[len(x) - 1][3:-4])
+                tot_o2 += int(summary[0])
+                tot_icu += int(summary[8])
+                tot_vent += int(summary[13])
+                occupied_normal += int(summary[3]) + int(summary[5])
+                occupied_o2 += int(summary[0]) - int(summary[1])
+                occupied_icu += int(summary[8]) - int(summary[9])
+                occupied_vent += int(summary[13]) - int(summary[14])
+                os.system("rm -vf tmp.csv tmp.xlsx")
+    
+                row = (
+                    date_str,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+    
+            elif city == "tn":
+                tamil_nadu_auto_parse_latest_bulletin()
+            elif city == "gurugram":
+                gurugram_auto_parse_latest_bulletin()
+            elif city == "rajasthan":
+                soup = get_url_failsafe(
+                    "https://covidinfo.rajasthan.gov.in/Covid-19hospital-wisebedposition-wholeRajasthan.aspx",
+                    75,
+                )
+                hosp = [
+                    " ".join([j.text for j in row("td")]) for row in soup("table")[0]("tr")
+                ][3:]
+                recent_update = [
+                    i
+                    for i in hosp
+                    if i.split()[-1] != "N/A"
+                    and datetime.datetime.strptime(i.split()[-2], "%d-%m-%Y")
+                    >= datetime.datetime.now() - datetime.timedelta(days=2)
+                ]
+                tot_normal = 0
+                tot_o2 = 0
+                tot_icu = 0
+                tot_vent = 0
+                occupied_normal = 0
+                occupied_o2 = 0
+                occupied_icu = 0
+                occupied_vent = 0
+                for i in recent_update:
+                    try:
+                        (
+                            tot_normal0,
+                            occupied_normal0,
+                            x1,
+                            tot_o20,
+                            occupied_o20,
+                            x2,
+                            tot_icu0,
+                            occupied_icu0,
+                            x3,
+                            tot_vent0,
+                            occupied_vent0,
+                            x4,
+                        ) = i.split()[-16:-4]
+                        tot_normal += int(tot_normal0)
+                        tot_o2 += int(tot_o20)
+                        tot_icu += int(tot_icu0)
+                        tot_vent += int(tot_vent0)
+                        occupied_normal += int(occupied_normal0)
+                        occupied_o2 += int(occupied_o20)
+                        occupied_icu += int(occupied_icu0)
+                        occupied_vent += int(occupied_vent0)
+                    except:
+                        print("in parsing rajasthan failed for hospital " + str(i))
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+            elif city == "up":
+                options = webdriver.ChromeOptions()
+                options.add_argument("--ignore-certificate-errors")
+                options.add_argument("--headless")
+                br = webdriver.Chrome(chrome_options=options)
+                # ~ print('downloading main UP page..')
+                br.get("https://beds.dgmhup-covid19.in/EN/covid19bedtrack")
+                # ~ print('downloaded main UP page..')
+                soup = BeautifulSoup(br.page_source, "html.parser")
+                select_districts = soup.find("select", {"id": "MainContent_EN_ddDistrict"})
+                districts = [opt.text for opt in select_districts.find_all("option")][1:]
+                # br.close()
+                dfs = []
+    
+                pbar = tqdm.tqdm(districts)
+                for district in pbar:
+                    pbar.set_description("parsing for UP district: " + district)
+                    try:
+                        district_element = br.find_element_by_name(
+                            "ctl00$MainContent_EN$ddDistrict"
+                        )
+                        district_element.send_keys(district)
+    
+                        facility_element = br.find_element_by_name(
+                            "ctl00$MainContent_EN$ddFacility"
+                        )
+                        facility_element.send_keys("All")
+    
+                        facilitytype_element = br.find_element_by_name(
+                            "ctl00$MainContent_EN$ddFacilityType"
+                        )
+                        facilitytype_element.send_keys("All Type")
+    
+                        bedavail = br.find_element_by_name("ctl00$MainContent_EN$ddBedAva")
+                        bedavail.send_keys("All")
+    
+                        submit = br.find_element_by_name("ctl00$MainContent_EN$Button2")
+                        submit.click()
+                        hospital_df = get_data_df(br)
+                        hospital_df["district"] = district
+                        dfs.append(hospital_df)
+                    except:
+                        print("Failed for district: " + district)
+                br.close()
+                all_dfs = pd.concat(dfs)
+                all_dfs["diff"] = all_dfs["total_beds"] - all_dfs["available_beds"]
+    
+                all_dfs = all_dfs.sort_values(by="diff", ascending=[False])
+    
+                all_dfs2 = (
+                    all_dfs.loc[:, ["last_updated_date", "total_beds", "available_beds"]]
+                    .groupby("last_updated_date")
+                    .agg(sum)
+                )
+                tot_normal, occupied_normal = all_dfs2[-3:].sum()
+                row = (date_str, tot_normal, occupied_normal)
+                print(city + ":")
+                print(row)
+    
+                # ~ all_dfs.to_pickle('tmp.pickle')
+                # ~ print(all_dfs2)
+            elif city == "manipur":
+                x = get_url_failsafe("https://nrhmmanipur.org/?page_id=5788")
+                links = [
+                    i["href"]
+                    for i in x.select("#content")[0]("a")
+                    if i.has_attr("href") and "status report of patients" in i.text.lower()
+                ]
+                if links:
+                    x = get_url_failsafe(links[0])
+                    x = get_url_failsafe(links[0])
+                else:
+                    print("no links found for manipur")
+                    continue
+                links = [
+                    i["href"]
+                    for i in x.select("#content")[0]("a")
+                    if i.has_attr("href") and "click here" in i.text.lower()
+                ]
+                if links:
+                    # ~ get_url_failsafe(links[0],out='manipur_'+str(date_str)+'.pdf')
+                    # pdf redirects, does not download directly
+                    os.system(
+                        'wget "' + links[0] + '" -O "manipur_' + str(date_str) + '.pdf"'
+                    )
+                    x = read_pdf("manipur_" + str(date_str) + ".pdf", silent=True, pages=1)
+                    x = x[0]
+                    raw_line = " ".join(
+                        [
+                            str(x).split(".")[0].strip()
+                            for x in list(x.iloc[len(x) - 2])
+                            if str(x) != "nan"
+                        ]
+                    )
+                    raw_line = [i for i in raw_line.split() if i.isnumeric()]
+                    tot_normal, tot_icu = raw_line[:2]
+                    vacant_normal, vacant_icu, vacant_all = raw_line[-3:]
+                    occupied_normal = int(tot_normal) - int(vacant_normal)
+                    occupied_icu = int(tot_icu) - int(vacant_icu)
+                    report_date = os.path.split(links[0])[1]
+                    report_date = report_date.split("Report_")[1].split("_")[0]
+                    report_date_str = datetime.datetime.strptime(
+                        report_date, "%d-%m-%Y"
+                    ).strftime("%Y-%m-%d")
+                    row = (
+                        report_date_str,
+                        tot_normal,
+                        tot_icu,
+                        occupied_normal,
+                        occupied_icu,
+                    )
+                    print(city + ":")
+                    print(row)
+                else:
+                    print("no links (in download area) found for manipur")
+                    continue
+                os.system("rm -v *pdf")
+            elif city == "meghalaya":
+                megh_pdf = "http://www.nhmmeghalaya.nic.in/img/icons/Daily%20Covid%2019%20Status%20in%20Hospitals.pdf"
+                print("Downloading pdf..." + megh_pdf)
+                x = get_url_failsafe(
+                    megh_pdf, out="Meghalaya_" + str(date_str) + ".pdf", timeout=20
+                )
+                try:
+                    tables = read_pdf(
+                        "Meghalaya_" + str(date_str) + ".pdf", pages=1, silent=True
+                    )
+                except CalledProcessError:
+                    pass
+                dff = tables[0]
+                if "COVID STATUS IN HOSPITALS IN THE STATE AS ON" in dff.columns[1]:
+                    report_date_str = dff.columns[1].split(" ")[-1].replace(".", "-")
+                    report_date_str = (
+                        datetime.datetime.strptime(report_date_str, "%d-%m-%Y")
+                        .date()
+                        .strftime("%Y-%m-%d")
+                    )
+                raw_line = " ".join(
+                    [x.strip() for x in list(dff.iloc[len(dff) - 1]) if str(x) != "nan"]
+                )
+                (
+                    beds_without_o2,
+                    tot_o2,
+                    tot_icu,
+                    tot_all,
+                    tot_occupied,
+                    tot_vacant,
+                ) = raw_line.split(" ")[1:]
+                os.system("rm -v *pdf")
+                row = (report_date_str, tot_all, tot_occupied)
+                print(city + ":")
+                print(row)
+    
+            elif city == "jharkhand":
+                soup = get_url_failsafe("http://jrhms.jharkhand.gov.in/news-press-releases")
+                links = soup.find_all("a", {"target": "_blank"})
+                date = datetime.datetime.now()
+                date_str = date.strftime("%Y-%m-%d")
+                downloaded_first_pdf = False
+    
+                for link in links:
+                    if downloaded_first_pdf:
+                        break
+                    if ".pdf" in link.get("href", []):
+                        print("Downloading pdf...")
+                        l = "http://jrhms.jharkhand.gov.in/" + link.get("href")
+                        print(l)
+                        get_url_failsafe(l, out="Jharkhand_" + str(date_str) + ".pdf")
+                        # ~ response = requests.get(l)
+                        # ~ pdf = open("Jharkhand_" + str(date_str) + ".pdf", "wb")
+                        # ~ pdf.write(response.content)
+                        # ~ pdf.close()
+                        downloaded_first_pdf = True
+    
+                        try:
+                            tables = read_pdf(
+                                "Jharkhand_" + str(date_str) + ".pdf", pages=2, silent=True
+                            )
+                        except CalledProcessError:
+                            print("CalledProcessError when parsing Jharkhand pdf!")
+                            continue
+                        dff = tables[0]
+    
+                        if "Bed Status" in " ".join(dff.columns):
+                            raw_line = " ".join(list(dff.iloc[len(dff) - 1])).strip()
+    
+                            (
+                                tot_o2,
+                                occupied_o2,
+                                tot_icu,
+                                occupied_icu,
+                                tot_vent,
+                                occupied_vent,
+                            ) = raw_line.split(" ")[-6:]
+    
+                            report_date_str = (
+                                unquote(l).split("/")[-1].split(".pdf")[0].split(" ")[0]
+                            )
+                            report_date_str = (
+                                datetime.datetime.strptime(report_date_str, "%d-%m-%Y")
+                                .date()
+                                .strftime("%Y-%m-%d")
+                            )
+    
+                os.system("rm -v *pdf")
+                row = (
+                    report_date_str,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+            elif city == "jamshedpur":
+                options = webdriver.ChromeOptions()
+                options.add_argument("--ignore-certificate-errors")
+                options.add_argument("--headless")
+                br = webdriver.Chrome(chrome_options=options)
+                br.get("https://xlri.edu/covid19/bed-status/")
+                soup = BeautifulSoup(br.page_source, "html.parser")
+                cards = soup.select(".card")
+                vacant_normal, tot_normal = cards[0]("p")[1].text.split("/")
+                occupied_normal = int(tot_normal) - int(vacant_normal)
+                vacant_o2, tot_o2 = cards[1]("p")[1].text.split("/")
+                occupied_o2 = int(tot_o2) - int(vacant_o2)
+                vacant_icu, tot_icu = cards[2]("p")[1].text.split("/")
+                occupied_icu = int(tot_icu) - int(vacant_icu)
+                vacant_vent, tot_vent = cards[3]("p")[1].text.split("/")
+                occupied_vent = int(tot_vent) - int(vacant_vent)
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+            elif city == "bihar":
+                soup = get_url_failsafe(
+                    "https://covid19health.bihar.gov.in/DailyDashboard/BedsOccupied", 60
+                )
+                datasets = get_dataset_from_html_table(soup("table")[0])
+    
+                regularly_updated = [
+                    "MADHEPURA",
+                    "PATNA",
+                    "BHAGALPUR",
+                    "DARBHANGA",
+                    "MUZAFFARPUR",
+                ]
+                hosp = [
+                    i for i in datasets if i[0][1] in regularly_updated and i[3][1] == "DCH"
+                ]
+    
+                tot_beds = 0
+                vacant_beds = 0
+                tot_icu = 0
+                vacant_icu = 0
+                for i in hosp:
+                    tot_beds += int(i[5][1])
+                    vacant_beds += int(i[6][1])
+                    tot_icu += int(i[7][1])
+                    vacant_icu += int(i[8][1])
+                occupied_beds = tot_beds - vacant_beds
+                occupied_icu = tot_icu - vacant_icu
+    
+                row = (date_str, tot_beds, tot_icu, occupied_beds, occupied_icu)
+                print(city + ":")
+                print(row)
+    
+            elif city == "gandhinagar":
                 x = os.popen(
-                    "curl --max-time 60 -x "
-                    + global_proxy
-                    + " -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU"
+                    "curl --max-time 20 -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx"
                 ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            jammu_hospitals = [
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609382b4f64c7a2d446721ec",
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609381cbb1c6502bfe8c3c5f",
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60938338f64c7a2d446721ee",
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/6093826ef64c7a2d446721eb",
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609a4aa4dc9ca218af2fa243",
-                "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60bb02f17b6808683a6284e0",
-            ]
-            tnc = tic = tno = too = tio = 0
-            for hospital in jammu_hospitals:
-                x = os.popen("curl --max-time 30 -# -k " + hospital).read()
                 tries = 0
                 while (not x) and tries < 10:
                     x = os.popen(
-                        "curl --max-time 60 -x " + global_proxy + " -# -k " + hospital
+                        "curl --max-time 60 -x "
+                        + global_proxy
+                        + " -# -k https://vmc.gov.in/HospitalModuleGMC/Default.aspx"
                     ).read()
                 soup = BeautifulSoup(x, "html.parser")
-                try:
-                    x1, x2, x3, nc, nv, ic, iv, oo = [
-                        i("td")[1].text
-                        for i in soup("table")[0]("tr")
-                        if len(i("td")) > 1
-                    ]
-                    no = int(nc) - int(nv)
-                    tno += no
-                    tnc += int(nc)
-                    io = int(ic) - int(iv)
-                    tio += io
-                    tic += int(ic)
-                except:
-                    print("failed for " + hospital)
-                    # ~ print(soup)
-
-            row = (date_str, tnc, tic, tno, too, tio)
-            print(city + ":")
-            print(row)
-        elif city == "nagpur":
-            # ~ x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
-            # ~ tries=0
-            # ~ while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
-
-            soup = get_url_failsafe("https://nsscdcl.org/covidbeds/", 20)
-            oa = (
-                soup("div", attrs={"class": "small-box"})[0]("button")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            oo = (
-                soup("div", attrs={"class": "small-box"})[0]("label")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            oc = int(oa) + int(oo)
-
-            na = (
-                soup("div", attrs={"class": "small-box"})[1]("button")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            no = (
-                soup("div", attrs={"class": "small-box"})[1]("label")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            nc = int(na) + int(no)
-
-            ia = (
-                soup("div", attrs={"class": "small-box"})[2]("button")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            io = (
-                soup("div", attrs={"class": "small-box"})[2]("label")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            ic = int(ia) + int(io)
-
-            va = (
-                soup("div", attrs={"class": "small-box"})[3]("button")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            vo = (
-                soup("div", attrs={"class": "small-box"})[3]("label")[0]
-                .text.split(":")[1]
-                .strip()
-            )
-            vc = int(va) + int(vo)
-
-            row = (date_str, nc, oc, ic, vc, no, oo, io, vo)
-            print(city + ":")
-            print(row)
-        elif city == "mumbai":
-            mumbai_bulletin_auto_parser()
-        elif city == "gbn":
-            # check if data for given date already exists in csv. Update only if data doesn't exist
-            a = open("data.gbn.csv")
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:] if len(i) > 0]))
-            dates.sort()
-
-            dont_update_data_csv = False
-            if date_str in dates:
-                dont_update_data_csv = True
-                print(
-                    "----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
-                    % (date_str)
-                )
-
-            # get data
-            import requests
-            from requests.structures import CaseInsensitiveDict
-
-            url = "https://api.gbncovidtracker.in/hospitals"
-
-            headers = CaseInsensitiveDict()
-            headers["Connection"] = "keep-alive"
-            headers["Accept"] = "application/json, text/plain, */*"
-            headers["DNT"] = "1"
-            headers["sec-ch-ua-mobile"] = "?0"
-            headers[
-                "User-Agent"
-            ] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
-            headers["sec-ch-ua-platform"] = "Linux"
-            headers["Origin"] = "https://gbncovidtracker.in"
-            headers["Sec-Fetch-Site"] = "same-site"
-            headers["Sec-Fetch-Mode"] = "cors"
-            headers["Sec-Fetch-Dest"] = "empty"
-            headers["Referer"] = "https://gbncovidtracker.in/"
-            headers["Accept-Language"] = "en-US,en;q=0.9"
-
-            resp = requests.get(url, headers=headers)
-            # ~ print('api call status code: ', resp.status_code)
-
-            y = resp.json()
-
-            if y:
-                tot_beds = 0
-                tot_o2_beds = 0
-                tot_ventilator_beds = 0
-                occupied_beds = 0
-                occupied_o2_beds = 0
-                occupied_ventilator_beds = 0
-
-                for i in y:
-                    tot_beds += int(i["normal"])
-                    tot_o2_beds += int(i["oxygen"])
-                    tot_ventilator_beds += int(i["ventilator"])
-                    occupied_beds += int(i["normal"]) - int(i["Vacant_normal"])
-                    occupied_o2_beds += int(i["oxygen"]) - int(i["Vacant_oxygen"])
-                    occupied_ventilator_beds += int(i["ventilator"]) - int(
-                        i["Vacant_ventilator"]
-                    )
-
-                # ~ for bed_type in ['beds', 'oxygen_beds', 'covid_icu_beds', 'ventilators', 'icu_beds_without_ventilator', 'noncovid_icu_beds']:
-                info = "%s,%d,%d,%d,%d,%d,%d\n" % (
-                    date_str,
-                    tot_beds,
-                    tot_o2_beds,
-                    tot_ventilator_beds,
-                    occupied_beds,
-                    occupied_o2_beds,
-                    occupied_ventilator_beds,
-                )
-
-                # write to file
-                a = open("data.gbn.csv", "a")
-                if not dont_update_data_csv:
-                    a.write(info + "\n")
-                print("gbn: " + info)
-                a.close()
-            else:
-                print(
-                    "could not get data from https://api.gbncovidtracker.in/hospitals"
-                )
-
-        elif city == "delhi":
-            # check if data for given date already exists in csv. Update only if data doesn't exist
-            a = open("data.delhi.csv")
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:]]))
-            dates.sort()
-
-            dont_update_data_csv = False
-            if date_str in dates:
-                dont_update_data_csv = True
-                print(
-                    "----------\n\nData for %s already exists in data.delhi.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
-                    % (date_str)
-                )
-
-            # get data
-            y = str(
-                requests.get("https://coronabeds.jantasamvad.org/covid-info.js").content
-            )
-            if y:
-                y = json.loads(
-                    y[y.find("{") : y.rfind("}") + 1]
-                    .replace("\\n", "")
-                    .replace("\\'", "")
-                )
-                info = ""
-
-                # ~ for bed_type in ['beds', 'oxygen_beds', 'covid_icu_beds', 'ventilators', 'icu_beds_without_ventilator', 'noncovid_icu_beds']:
-                # ~ info+='%s,%s,%d,%d,%d\n' %(date_str,bed_type,y[bed_type]['All']['total'],y[bed_type]['All']['occupied'],y[bed_type]['All']['vacant'])
-                info += "%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d" % (
-                    date_str,
-                    y["beds"]["All"]["total"],
-                    y["oxygen_beds"]["All"]["total"],
-                    y["covid_icu_beds"]["All"]["total"],
-                    y["ventilators"]["All"]["total"],
-                    y["icu_beds_without_ventilator"]["All"]["total"],
-                    y["noncovid_icu_beds"]["All"]["total"],
-                    y["beds"]["All"]["occupied"],
-                    y["oxygen_beds"]["All"]["occupied"],
-                    y["covid_icu_beds"]["All"]["occupied"],
-                    y["ventilators"]["All"]["occupied"],
-                    y["icu_beds_without_ventilator"]["All"]["occupied"],
-                    y["noncovid_icu_beds"]["All"]["occupied"],
-                )
-                print("delhi: " + info)
-
-                # write to file
-                if not dont_update_data_csv:
-                    a = open("data.delhi.csv", "a")
-                    a.write(info + "\n")
-                    a.close()
-            else:
-                print(
-                    "could not get data from https://coronabeds.jantasamvad.org/covid-info.js"
-                )
-
-        elif city == "pune":
-            x = os.popen(
-                "curl -# -k https://divcommpunecovid.com/ccsbeddashboard/hsr"
-            ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            xx = soup("legend")[1].parent
-            xx = xx("table")[0]
-            (
-                tot_beds,
-                vacant_beds,
-                tot_normal,
-                vacant_normal,
-                tot_o2,
-                vacant_o2,
-                tot_icu,
-                vacant_icu,
-                tot_vent,
-                vacant_vent,
-            ) = [i.text for i in xx("td") if i.text.isnumeric()]
-            print(
-                tot_beds,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                vacant_beds,
-                vacant_normal,
-                vacant_o2,
-                vacant_icu,
-                vacant_vent,
-            )
-            occupied_normal = int(tot_normal) - int(vacant_normal)
-            occupied_o2 = int(tot_o2) - int(vacant_o2)
-            occupied_icu = int(tot_icu) - int(vacant_icu)
-            occupied_vent = int(tot_vent) - int(vacant_vent)
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "ap":
-            try:
-                br = webdriver.PhantomJS()
-                br.get("http://dashboard.covid19.ap.gov.in/ims/hospbed_reports//")
-                time.sleep(3)
-                x = br.page_source
+                x1, x2, x3, vt, vo, vv, it, io, iv, ot, oo, ov, nt, no, nv = [
+                    i.text
+                    for i in soup("table")[0]("span")
+                    if i.has_attr("id") and i["id"].startswith("lb")
+                ]
+                row = (date_str, nt, ot, it, vt, no, oo, io, vo)
+                print(city + ":")
+                print(row)
+    
+            elif city == "vadodara":
+                x = os.popen(
+                    "curl --max-time 20 -# -k  https://vmc.gov.in/covid19vadodaraapp/Default.aspx"
+                ).read()
+                tries = 0
+                while (not x) and tries < 10:
+                    x = os.popen(
+                        "curl --max-time 60 -x "
+                        + global_proxy
+                        + " -# -k https://vmc.gov.in/covid19vadodaraapp/Default.aspx"
+                    ).read()
                 soup = BeautifulSoup(x, "html.parser")
+                x1, x2, x3, vt, vo, vv, it, io, iv, ot, oo, ov, nt, no, nv, x5 = [
+                    i.text
+                    for i in soup("table")[0]("span")
+                    if i.has_attr("id") and i["id"].startswith("lb")
+                ]
+                row = (date_str, nt, ot, it, vt, no, oo, io, vo)
+                print(city + ":")
+                print(row)
+            elif city == "ct":
+                pass
+            elif city == "wb":
+                x = os.popen(
+                    "curl --max-time 15 -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx"
+                ).read()
+                tries = 0
+                while (not x) and tries < 10:
+                    x = os.popen(
+                        "curl --max-time 60 -x "
+                        + global_proxy
+                        + " -# -k https://excise.wb.gov.in/chms/Portal_Default.aspx"
+                    ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                x1, nc, nv, x2 = [
+                    i.text.strip() for i in soup("span", attrs={"class": "counter"})
+                ]
+                no = int(nc) - int(nv)
+                row = (date_str, nc, no)
+                print(city + ":")
+                print(row)
+            elif city == "nashik":
+                x = os.popen(
+                    "curl --max-time 15 -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary"
+                ).read()
+                tries = 0
+                while (not x) and tries < 10:
+                    x = os.popen(
+                        "curl --max-time 60 -x "
+                        + global_proxy
+                        + " -# -k https://covidcbrs.nmc.gov.in/home/hospitalSummary"
+                    ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                x1, x2, x3, x4, nt, nv, ot, ov, it, iv, vt, vv = [
+                    i.text.strip() for i in soup("tfoot")[0]("th")
+                ]
+                no = int(nt) - int(nv)
+                oo = int(ot) - int(ov)
+                io = int(it) - int(iv)
+                vo = int(vt) - int(vv)
+                row = (date_str, nt, ot, it, vt, no, oo, io, vo)
+                print(city + ":")
+                print(row)
+            elif city == "goa":
+                soup = get_url_failsafe("https://goaonline.gov.in/beds")
+                table = soup("table")[1]
+                headings = [th.get_text() for th in table.find("tr").find_all("th")]
+                datasets = []
+                for row in table.find_all("tr")[1:]:
+                    dataset = list(
+                        zip(headings, (td.get_text() for td in row.find_all("td")))
+                    )
+                    datasets.append(dataset)
+                # rest of hosp. not updated
+                x = [
+                    i
+                    for i in datasets
+                    if i[1][1]
+                    in [
+                        "Goa Medical College & Hospital, Bambolim",
+                        "Victor Hospital, Margao",
+                    ]
+                ]
+                tot_normal = sum([int(i[2][1]) for i in x])
+                vacant_normal = sum([int(i[3][1]) for i in x])
+                occupied_normal = tot_normal - vacant_normal
+                tot_icu = sum([int(i[4][1]) for i in x])
+                vacant_icu = sum([int(i[5][1]) for i in x])
+                occupied_icu = tot_icu - vacant_icu
+                row = (date_str, tot_normal, tot_icu, occupied_normal, occupied_icu)
+                print(city + ":")
+                print(row)
+            elif city == "jammu":
+                x = os.popen(
+                    "curl --max-time 30 -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU"
+                ).read()
+                tries = 0
+                while (not x) and tries < 10:
+                    x = os.popen(
+                        "curl --max-time 60 -x "
+                        + global_proxy
+                        + " -# -k https://covidrelief.jk.gov.in/Beds/Hospitals/JAMMU"
+                    ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                jammu_hospitals = [
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609382b4f64c7a2d446721ec",
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609381cbb1c6502bfe8c3c5f",
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60938338f64c7a2d446721ee",
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/6093826ef64c7a2d446721eb",
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/609a4aa4dc9ca218af2fa243",
+                    "https://covidrelief.jk.gov.in/Beds/Hospitals/Hospital/60bb02f17b6808683a6284e0",
+                ]
+                tnc = tic = tno = too = tio = 0
+                for hospital in jammu_hospitals:
+                    x = os.popen("curl --max-time 30 -# -k " + hospital).read()
+                    tries = 0
+                    while (not x) and tries < 10:
+                        x = os.popen(
+                            "curl --max-time 60 -x " + global_proxy + " -# -k " + hospital
+                        ).read()
+                    soup = BeautifulSoup(x, "html.parser")
+                    try:
+                        x1, x2, x3, nc, nv, ic, iv, oo = [
+                            i("td")[1].text
+                            for i in soup("table")[0]("tr")
+                            if len(i("td")) > 1
+                        ]
+                        no = int(nc) - int(nv)
+                        tno += no
+                        tnc += int(nc)
+                        io = int(ic) - int(iv)
+                        tio += io
+                        tic += int(ic)
+                    except:
+                        print("failed for " + hospital)
+                        # ~ print(soup)
+    
+                row = (date_str, tnc, tic, tno, too, tio)
+                print(city + ":")
+                print(row)
+            elif city == "nagpur":
+                # ~ x=os.popen('curl --max-time 30 -# -k https://nsscdcl.org/covidbeds/').read()
+                # ~ tries=0
+                # ~ while (not x) and tries<10: x=os.popen('curl --max-time 60 -x '+global_proxy+' -# -k https://nsscdcl.org/covidbeds/').read()
+    
+                soup = get_url_failsafe("https://nsscdcl.org/covidbeds/", 20)
+                oa = (
+                    soup("div", attrs={"class": "small-box"})[0]("button")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                oo = (
+                    soup("div", attrs={"class": "small-box"})[0]("label")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                oc = int(oa) + int(oo)
+    
+                na = (
+                    soup("div", attrs={"class": "small-box"})[1]("button")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                no = (
+                    soup("div", attrs={"class": "small-box"})[1]("label")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                nc = int(na) + int(no)
+    
+                ia = (
+                    soup("div", attrs={"class": "small-box"})[2]("button")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                io = (
+                    soup("div", attrs={"class": "small-box"})[2]("label")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                ic = int(ia) + int(io)
+    
+                va = (
+                    soup("div", attrs={"class": "small-box"})[3]("button")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                vo = (
+                    soup("div", attrs={"class": "small-box"})[3]("label")[0]
+                    .text.split(":")[1]
+                    .strip()
+                )
+                vc = int(va) + int(vo)
+    
+                row = (date_str, nc, oc, ic, vc, no, oo, io, vo)
+                print(city + ":")
+                print(row)
+            elif city == "mumbai":
+                mumbai_bulletin_auto_parser()
+            elif city == "gbn":
+                # check if data for given date already exists in csv. Update only if data doesn't exist
+                a = open("data.gbn.csv")
+                r = csv.reader(a)
+                info = [i for i in r]
+                a.close()
+                dates = list(set([i[0] for i in info[1:] if len(i) > 0]))
+                dates.sort()
+    
+                dont_update_data_csv = False
+                if date_str in dates:
+                    dont_update_data_csv = True
+                    print(
+                        "----------\n\nData for %s already exists in csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
+                        % (date_str)
+                    )
+    
+                # get data
+                import requests
+                from requests.structures import CaseInsensitiveDict
+    
+                url = "https://api.gbncovidtracker.in/hospitals"
+    
+                headers = CaseInsensitiveDict()
+                headers["Connection"] = "keep-alive"
+                headers["Accept"] = "application/json, text/plain, */*"
+                headers["DNT"] = "1"
+                headers["sec-ch-ua-mobile"] = "?0"
+                headers[
+                    "User-Agent"
+                ] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+                headers["sec-ch-ua-platform"] = "Linux"
+                headers["Origin"] = "https://gbncovidtracker.in"
+                headers["Sec-Fetch-Site"] = "same-site"
+                headers["Sec-Fetch-Mode"] = "cors"
+                headers["Sec-Fetch-Dest"] = "empty"
+                headers["Referer"] = "https://gbncovidtracker.in/"
+                headers["Accept-Language"] = "en-US,en;q=0.9"
+    
+                resp = requests.get(url, headers=headers)
+                # ~ print('api call status code: ', resp.status_code)
+    
+                y = resp.json()
+    
+                if y:
+                    tot_beds = 0
+                    tot_o2_beds = 0
+                    tot_ventilator_beds = 0
+                    occupied_beds = 0
+                    occupied_o2_beds = 0
+                    occupied_ventilator_beds = 0
+    
+                    for i in y:
+                        tot_beds += int(i["normal"])
+                        tot_o2_beds += int(i["oxygen"])
+                        tot_ventilator_beds += int(i["ventilator"])
+                        occupied_beds += int(i["normal"]) - int(i["Vacant_normal"])
+                        occupied_o2_beds += int(i["oxygen"]) - int(i["Vacant_oxygen"])
+                        occupied_ventilator_beds += int(i["ventilator"]) - int(
+                            i["Vacant_ventilator"]
+                        )
+    
+                    # ~ for bed_type in ['beds', 'oxygen_beds', 'covid_icu_beds', 'ventilators', 'icu_beds_without_ventilator', 'noncovid_icu_beds']:
+                    info = "%s,%d,%d,%d,%d,%d,%d\n" % (
+                        date_str,
+                        tot_beds,
+                        tot_o2_beds,
+                        tot_ventilator_beds,
+                        occupied_beds,
+                        occupied_o2_beds,
+                        occupied_ventilator_beds,
+                    )
+    
+                    # write to file
+                    a = open("data.gbn.csv", "a")
+                    if not dont_update_data_csv:
+                        a.write(info + "\n")
+                    print("gbn: " + info)
+                    a.close()
+                else:
+                    print(
+                        "could not get data from https://api.gbncovidtracker.in/hospitals"
+                    )
+    
+            elif city == "delhi":
+                # check if data for given date already exists in csv. Update only if data doesn't exist
+                a = open("data.delhi.csv")
+                r = csv.reader(a)
+                info = [i for i in r]
+                a.close()
+                dates = list(set([i[0] for i in info[1:]]))
+                dates.sort()
+    
+                dont_update_data_csv = False
+                if date_str in dates:
+                    dont_update_data_csv = True
+                    print(
+                        "----------\n\nData for %s already exists in data.delhi.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
+                        % (date_str)
+                    )
+    
+                # get data
+                y = str(
+                    requests.get("https://coronabeds.jantasamvad.org/covid-info.js").content
+                )
+                if y:
+                    y = json.loads(
+                        y[y.find("{") : y.rfind("}") + 1]
+                        .replace("\\n", "")
+                        .replace("\\'", "")
+                    )
+                    info = ""
+    
+                    # ~ for bed_type in ['beds', 'oxygen_beds', 'covid_icu_beds', 'ventilators', 'icu_beds_without_ventilator', 'noncovid_icu_beds']:
+                    # ~ info+='%s,%s,%d,%d,%d\n' %(date_str,bed_type,y[bed_type]['All']['total'],y[bed_type]['All']['occupied'],y[bed_type]['All']['vacant'])
+                    info += "%s,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d" % (
+                        date_str,
+                        y["beds"]["All"]["total"],
+                        y["oxygen_beds"]["All"]["total"],
+                        y["covid_icu_beds"]["All"]["total"],
+                        y["ventilators"]["All"]["total"],
+                        y["icu_beds_without_ventilator"]["All"]["total"],
+                        y["noncovid_icu_beds"]["All"]["total"],
+                        y["beds"]["All"]["occupied"],
+                        y["oxygen_beds"]["All"]["occupied"],
+                        y["covid_icu_beds"]["All"]["occupied"],
+                        y["ventilators"]["All"]["occupied"],
+                        y["icu_beds_without_ventilator"]["All"]["occupied"],
+                        y["noncovid_icu_beds"]["All"]["occupied"],
+                    )
+                    print("delhi: " + info)
+    
+                    # write to file
+                    if not dont_update_data_csv:
+                        a = open("data.delhi.csv", "a")
+                        a.write(info + "\n")
+                        a.close()
+                else:
+                    print(
+                        "could not get data from https://coronabeds.jantasamvad.org/covid-info.js"
+                    )
+    
+            elif city == "pune":
+                x = os.popen(
+                    "curl -# -k https://divcommpunecovid.com/ccsbeddashboard/hsr"
+                ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                xx = soup("legend")[1].parent
+                xx = xx("table")[0]
                 (
-                    xyz,
-                    number_of_hospitals,
-                    tot_icu,
-                    occupied_icu,
-                    vacant_icu,
-                    tot_o2,
-                    occupied_o2,
-                    vacant_o2,
+                    tot_beds,
+                    vacant_beds,
                     tot_normal,
-                    occupied_normal,
                     vacant_normal,
+                    tot_o2,
+                    vacant_o2,
+                    tot_icu,
+                    vacant_icu,
                     tot_vent,
-                    occupied_vent,
                     vacant_vent,
-                ) = [i.text for i in soup("tr")[-1]("td")][:14]
+                ) = [i.text for i in xx("td") if i.text.isnumeric()]
+                print(
+                    tot_beds,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    vacant_beds,
+                    vacant_normal,
+                    vacant_o2,
+                    vacant_icu,
+                    vacant_vent,
+                )
+                occupied_normal = int(tot_normal) - int(vacant_normal)
+                occupied_o2 = int(tot_o2) - int(vacant_o2)
+                occupied_icu = int(tot_icu) - int(vacant_icu)
+                occupied_vent = int(tot_vent) - int(vacant_vent)
                 row = (
                     date_str,
                     tot_normal,
@@ -1731,18 +1695,212 @@ if __name__ == "__main__":
                 )
                 print(city + ":")
                 print(row)
-            except:
-                print(
-                    "Failed to download/scrape AP data from http://dashboard.covid19.ap.gov.in/ims/hospbed_reports/ !!"
+            elif city == "ap":
+                try:
+                    br = webdriver.PhantomJS()
+                    br.get("http://dashboard.covid19.ap.gov.in/ims/hospbed_reports//")
+                    time.sleep(3)
+                    x = br.page_source
+                    soup = BeautifulSoup(x, "html.parser")
+                    (
+                        xyz,
+                        number_of_hospitals,
+                        tot_icu,
+                        occupied_icu,
+                        vacant_icu,
+                        tot_o2,
+                        occupied_o2,
+                        vacant_o2,
+                        tot_normal,
+                        occupied_normal,
+                        vacant_normal,
+                        tot_vent,
+                        occupied_vent,
+                        vacant_vent,
+                    ) = [i.text for i in soup("tr")[-1]("td")][:14]
+                    row = (
+                        date_str,
+                        tot_normal,
+                        tot_o2,
+                        tot_icu,
+                        tot_vent,
+                        occupied_normal,
+                        occupied_o2,
+                        occupied_icu,
+                        occupied_vent,
+                    )
+                    print(city + ":")
+                    print(row)
+                except:
+                    print(
+                        "Failed to download/scrape AP data from http://dashboard.covid19.ap.gov.in/ims/hospbed_reports/ !!"
+                    )
+            elif city == "telangana":
+                x = os.popen(
+                    "curl -# -k http://164.100.112.24/SpringMVC/Hospital_Beds_Statistic_Bulletin_citizen.htm"
+                ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                try:
+                    (
+                        xyz,
+                        tot_normal,
+                        occupied_normal,
+                        vacant_normal,
+                        tot_o2,
+                        occupied_o2,
+                        vacant_o2,
+                        tot_icu,
+                        occupied_icu,
+                        vacant_icu,
+                        a1,
+                        a2,
+                        a3,
+                    ) = [i.text for i in soup("tr")[-1]("th")]
+                except:
+                    print("could not unpack " + str([i.text for i in soup("tr")[-1]("th")]))
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
                 )
-        elif city == "telangana":
-            x = os.popen(
-                "curl -# -k http://164.100.112.24/SpringMVC/Hospital_Beds_Statistic_Bulletin_citizen.htm"
-            ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            try:
+                print(city + ":")
+                print(row)
+            elif city == "kerala":
+                x = os.popen(
+                    "curl -# -k https://covid19jagratha.kerala.nic.in/home/addHospitalDashBoard"
+                ).read()
+                soup = BeautifulSoup(x, "html.parser")
+    
+                n = soup("div", attrs={"class": "box"})[1]
+                occupied_normal, tot_normal = (
+                    n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
+                )
+    
+                n = soup("div", attrs={"class": "box"})[2]
+                occupied_icu, tot_icu = (
+                    n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
+                )
+    
+                n = soup("div", attrs={"class": "box"})[3]
+                occupied_vent, tot_vent = (
+                    n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
+                )
+    
+                n = soup("div", attrs={"class": "box"})[4]
+                occupied_o2, tot_o2 = (
+                    n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
+                )
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+    
+            elif city == "uttarakhand":
+                x = os.popen("curl -# -k https://covid19.uk.gov.in/bedssummary.aspx").read()
+                soup = BeautifulSoup(x, "html.parser")
+    
+                n = soup("div", attrs={"id": "ContentPlaceHolder1_divIsolation"})[0]
+                xz1, tot_normal, xz2, vacant_normal = [i.text for i in n("span")]
+                occupied_normal = int(tot_normal) - int(vacant_normal)
+    
+                n = soup("div", attrs={"id": "ContentPlaceHolder1_divOx2"})[0]
+                xz1, tot_o2, xz2, vacant_o2 = [i.text for i in n("span")]
+                occupied_o2 = int(tot_o2) - int(vacant_o2)
+    
+                n = soup("div", attrs={"id": "ContentPlaceHolder1_divICU"})[0]
+                xz1, tot_icu, xz2, vacant_icu = [i.text for i in n("span")]
+                occupied_icu = int(tot_icu) - int(vacant_icu)
+    
+                n = soup("div", attrs={"id": "ContentPlaceHolder1_div1"})[0]
+                xz1, tot_vent, xz2, vacant_vent = [i.text for i in n("span")]
+                occupied_vent = int(tot_vent) - int(vacant_vent)
+    
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    tot_vent,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                    occupied_vent,
+                )
+                print(city + ":")
+                print(row)
+    
+            elif city == "chandigarh":
+                x = os.popen(
+                    "curl -# -k http://chdcovid19.in/chdcovidbed19/index.php/home/stats"
+                ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                table = soup("table")[0]
+    
+                # ~ toc=tvc=tic=tnc=0
+                # ~ too=tvo=tio=tno=0
+                # ~ for row in table('tr')[2:]:
+                # ~ hospital_name,hosp_type,updated_on,oc,oa,ov,nc,no,nv,ic,io,iv,vc,vo,vv=[i.text for i in  row('td')]
+                # ~ toc+=int(oc);        tvc+=int(vc);        tic+=int(ic);        tnc+=int(nc)
+                # ~ too+=int(oo);        tvo+=int(vo);        tio+=int(io);        tno+=int(no)
+    
+                try:
+                    xyz, toc, too, toa, tnc, tno, tna, tic, tio, tia, tvc, tvo, tva = [
+                        i.text for i in table("tr")[-1]("td")
+                    ]
+                except:
+                    print(
+                        "could not unpack chandigarh values!\n" + str(table("tr")[-1]("td"))
+                    )
+                row = (date_str, tnc, toc, tic, tvc, tno, too, tio, tvo)
+                print(city + " : " + str(row))
+            elif city == "hp":
+                x = os.popen("curl -# -k https://covidcapacity.hp.gov.in/index.php").read()
+                soup = BeautifulSoup(x, "html.parser")
+                xx = soup("a", attrs={"id": "oxygenbedmodel"})[0]
+                tot_o2 = int(xx.parent.parent("td")[0].text)
+                occupied_o2 = int(xx.parent.parent("td")[1].text)
+                xx = soup("a", attrs={"id": "icubedmodel"})[0]
+                tot_icu = int(xx.parent.parent("td")[0].text)
+                occupied_icu = int(xx.parent.parent("td")[1].text)
+                xx = soup("a", attrs={"id": "Standardbedmodel"})[0]
+                tot_normal = int(xx.parent.parent("td")[0].text)
+                occupied_normal = int(xx.parent.parent("td")[1].text)
+                row = (
+                    date_str,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
+                )
+                print(city + ":")
+                print(row)
+            elif city == "mp":
+                x = os.popen(
+                    "curl -# -k http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-dashboard/"
+                ).read()
+                soup = BeautifulSoup(x, "html.parser")
+                xx = soup(
+                    "a",
+                    attrs={
+                        "href": "http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-details"
+                    },
+                )
                 (
-                    xyz,
                     tot_normal,
                     occupied_normal,
                     vacant_normal,
@@ -1752,393 +1910,235 @@ if __name__ == "__main__":
                     tot_icu,
                     occupied_icu,
                     vacant_icu,
-                    a1,
-                    a2,
-                    a3,
-                ) = [i.text for i in soup("tr")[-1]("th")]
-            except:
-                print("could not unpack " + str([i.text for i in soup("tr")[-1]("th")]))
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "kerala":
-            x = os.popen(
-                "curl -# -k https://covid19jagratha.kerala.nic.in/home/addHospitalDashBoard"
-            ).read()
-            soup = BeautifulSoup(x, "html.parser")
-
-            n = soup("div", attrs={"class": "box"})[1]
-            occupied_normal, tot_normal = (
-                n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
-            )
-
-            n = soup("div", attrs={"class": "box"})[2]
-            occupied_icu, tot_icu = (
-                n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
-            )
-
-            n = soup("div", attrs={"class": "box"})[3]
-            occupied_vent, tot_vent = (
-                n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
-            )
-
-            n = soup("div", attrs={"class": "box"})[4]
-            occupied_o2, tot_o2 = (
-                n("p")[0].text.replace(n("label")[0].text, "").strip().split("/")
-            )
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-
-        elif city == "uttarakhand":
-            x = os.popen("curl -# -k https://covid19.uk.gov.in/bedssummary.aspx").read()
-            soup = BeautifulSoup(x, "html.parser")
-
-            n = soup("div", attrs={"id": "ContentPlaceHolder1_divIsolation"})[0]
-            xz1, tot_normal, xz2, vacant_normal = [i.text for i in n("span")]
-            occupied_normal = int(tot_normal) - int(vacant_normal)
-
-            n = soup("div", attrs={"id": "ContentPlaceHolder1_divOx2"})[0]
-            xz1, tot_o2, xz2, vacant_o2 = [i.text for i in n("span")]
-            occupied_o2 = int(tot_o2) - int(vacant_o2)
-
-            n = soup("div", attrs={"id": "ContentPlaceHolder1_divICU"})[0]
-            xz1, tot_icu, xz2, vacant_icu = [i.text for i in n("span")]
-            occupied_icu = int(tot_icu) - int(vacant_icu)
-
-            n = soup("div", attrs={"id": "ContentPlaceHolder1_div1"})[0]
-            xz1, tot_vent, xz2, vacant_vent = [i.text for i in n("span")]
-            occupied_vent = int(tot_vent) - int(vacant_vent)
-
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                tot_vent,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-                occupied_vent,
-            )
-            print(city + ":")
-            print(row)
-
-        elif city == "chandigarh":
-            x = os.popen(
-                "curl -# -k http://chdcovid19.in/chdcovidbed19/index.php/home/stats"
-            ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            table = soup("table")[0]
-
-            # ~ toc=tvc=tic=tnc=0
-            # ~ too=tvo=tio=tno=0
-            # ~ for row in table('tr')[2:]:
-            # ~ hospital_name,hosp_type,updated_on,oc,oa,ov,nc,no,nv,ic,io,iv,vc,vo,vv=[i.text for i in  row('td')]
-            # ~ toc+=int(oc);        tvc+=int(vc);        tic+=int(ic);        tnc+=int(nc)
-            # ~ too+=int(oo);        tvo+=int(vo);        tio+=int(io);        tno+=int(no)
-
-            try:
-                xyz, toc, too, toa, tnc, tno, tna, tic, tio, tia, tvc, tvo, tva = [
-                    i.text for i in table("tr")[-1]("td")
-                ]
-            except:
-                print(
-                    "could not unpack chandigarh values!\n" + str(table("tr")[-1]("td"))
-                )
-            row = (date_str, tnc, toc, tic, tvc, tno, too, tio, tvo)
-            print(city + " : " + str(row))
-        elif city == "hp":
-            x = os.popen("curl -# -k https://covidcapacity.hp.gov.in/index.php").read()
-            soup = BeautifulSoup(x, "html.parser")
-            xx = soup("a", attrs={"id": "oxygenbedmodel"})[0]
-            tot_o2 = int(xx.parent.parent("td")[0].text)
-            occupied_o2 = int(xx.parent.parent("td")[1].text)
-            xx = soup("a", attrs={"id": "icubedmodel"})[0]
-            tot_icu = int(xx.parent.parent("td")[0].text)
-            occupied_icu = int(xx.parent.parent("td")[1].text)
-            xx = soup("a", attrs={"id": "Standardbedmodel"})[0]
-            tot_normal = int(xx.parent.parent("td")[0].text)
-            occupied_normal = int(xx.parent.parent("td")[1].text)
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "mp":
-            x = os.popen(
-                "curl -# -k http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-dashboard/"
-            ).read()
-            soup = BeautifulSoup(x, "html.parser")
-            xx = soup(
-                "a",
-                attrs={
-                    "href": "http://sarthak.nhmmp.gov.in/covid/facility-bed-occupancy-details"
-                },
-            )
-            (
-                tot_normal,
-                occupied_normal,
-                vacant_normal,
-                tot_o2,
-                occupied_o2,
-                vacant_o2,
-                tot_icu,
-                occupied_icu,
-                vacant_icu,
-            ) = [i.text for i in xx if i.text.isnumeric()]
-            row = (
-                date_str,
-                tot_normal,
-                tot_o2,
-                tot_icu,
-                occupied_normal,
-                occupied_o2,
-                occupied_icu,
-            )
-            print(city + ":")
-            print(row)
-        elif city == "ludhiana":
-
-            soup = get_url_failsafe("https://ludhiana.nic.in/bed-status/")
-            links = soup.find_all("a")
-
-            for link in links:
-                if ".pdf" in link.get("href", []):
-                    print("Downloading pdf...")
-
-                    l = link.get("href")
-                    print(l)
-                    response = requests.get(l)
-                    pdf = open("LDH_" + str(date_str) + ".pdf", "wb")
-                    pdf.write(response.content)
-                    pdf.close()
-                    break
-
-            # get date
-            os.system(
-                "pdftotext -f 1 -l 1 -x 0 -y 0 -W 500 -H 300  -layout LDH_"
-                + str(date_str)
-                + ".pdf tmp.txt"
-            )
-            b = [i.strip() for i in open("tmp.txt").readlines() if i.strip()]
-            date_line = ["Last edited on 9-January-2022 5.00 PM"]
-            if not date_line:
-                print(highlight("could not extract date for Ludhiana!!"))
-                continue
-            date_line = date_line[0].split()
-            date_line = date_line[date_line.index("on") + 1]
-            bulletin_date = datetime.datetime.strptime(date_line, "%d-%B-%Y")
-
-            # print(text)
-            tables = read_pdf("LDH_" + str(date_str) + ".pdf", pages="all")
-            df = tables[-1]
-            print(df.iloc[-1])
-            nums = []
-            for x in df.iloc[-1]:
-                if type(x) is None:
-                    continue
-                if type(x) == str:
-                    for s in x.split():
-                        if s.isnumeric():
-                            nums.append(s)
-
-            # ~ print(nums)
-            tot_o2, occupied_o2, vacant_o2, tot_icu, occupied_icu, vacant_icu = nums
-            a = open("data.ludhiana.csv")
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:]]))
-            dates.sort()
-            # save space by deleting the pdf
-            if os.path.exists("LDH_" + str(date_str) + ".pdf"):
-                os.remove("LDH_" + str(date_str) + ".pdf")
-            date_str = bulletin_date.strftime("%Y-%m-%d")
-            row = (date_str, tot_o2, tot_icu, occupied_o2, occupied_icu)
-            print(city + ":" + str(row))
-            # ~ if date_str in dates:
-            # ~ print('----------\n\nData for %s already exists in data.ludhiana.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
-            # ~ else:
-            # ~ #write to file
-            # ~ info=', '.join((date_str,tot_o2,tot_icu,occupied_o2,occupied_icu))
-            # ~ print(city+' : '+str(info))
-            # ~ # Date, L2_Total_Beds, L2_Occupied_Beds, L2_Available_Beds, L3_Total_Beds, L3_Occupied_Beds, L3_Available_Beds
-            # ~ a=open('data.ludhiana.csv','a');a.write(info+'\n');a.close()
-            # ~ print('Appended to data.ludhiana.csv: '+info)
-        elif city == "chennai":
-            # CHENNAI
-            import requests
-            from requests.structures import CaseInsensitiveDict
-
-            url = "https://tncovidbeds.tnega.org/api/hospitals"
-
-            headers = CaseInsensitiveDict()
-            headers["authority"] = "tncovidbeds.tnega.org"
-            # headers["sec-ch-ua"] = "" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96""
-            headers["dnt"] = "1"
-            headers["sec-ch-ua-mobile"] = "?0"
-            headers[
-                "user-agent"
-            ] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
-            headers["content-type"] = "application/json;charset=UTF-8"
-            headers["accept"] = "application/json, text/plain, */*"
-            headers["token"] = "null"
-            # headers["sec-ch-ua-platform"] = ""Linux""
-            headers["sec-ch-ua-platform"] = "Linux"
-            headers["origin"] = "https://tncovidbeds.tnega.org"
-            headers["sec-fetch-site"] = "same-origin"
-            headers["sec-fetch-mode"] = "cors"
-            headers["sec-fetch-dest"] = "empty"
-            headers["accept-language"] = "en-US,en;q=0.9"
-            # headers["cookie"] = "_ga=GA1.2.1493856265.1640076462; _gid=GA1.2.514620938.1640076462; _gat=1"
-
-            data = '{"searchString":"","sortCondition":{"Name":1},"pageNumber":1,"pageLimit":200,"SortValue":"Availability","ShowIfVacantOnly":"","Districts":["5ea0abd2d43ec2250a483a40"],"BrowserId":"6f4dfda2b7835796132d69d0e8525127","IsGovernmentHospital":true,"IsPrivateHospital":true,"FacilityTypes":["CHO"]}'
-
-            resp = requests.post(url, headers=headers, data=data)
-
-            print(resp.status_code)
-            y = json.loads(resp.content.decode("unicode_escape").replace("\n", ""))
-            tot_o2_beds = 0
-            tot_non_o2_beds = 0
-            tot_icu_beds = 0
-            occupied_o2_beds = 0
-            occupied_non_o2_beds = 0
-            occupied_icu_beds = 0
-            vacant_o2_beds = 0
-            vacant_non_o2_beds = 0
-            vacant_icu_beds = 0
-
-            for i in y["result"]:
-                tot_o2_beds += i["CovidBedDetails"]["AllotedO2Beds"]
-                tot_non_o2_beds += i["CovidBedDetails"]["AllotedNonO2Beds"]
-                tot_icu_beds += i["CovidBedDetails"]["AllotedICUBeds"]
-                occupied_o2_beds += i["CovidBedDetails"]["OccupancyO2Beds"]
-                occupied_non_o2_beds += i["CovidBedDetails"]["OccupancyNonO2Beds"]
-                occupied_icu_beds += i["CovidBedDetails"]["OccupancyICUBeds"]
-                vacant_o2_beds += i["CovidBedDetails"]["VaccantO2Beds"]
-                vacant_non_o2_beds += i["CovidBedDetails"]["VaccantNonO2Beds"]
-                vacant_icu_beds += i["CovidBedDetails"]["VaccantICUBeds"]
-            print(
-                "In Chennai, on %s\nO2: %d/%d occupied\nNon-O2 %d/%d occupied\nICU: %d/%d occupied"
-                % (
+                ) = [i.text for i in xx if i.text.isnumeric()]
+                row = (
                     date_str,
-                    occupied_o2_beds,
-                    tot_o2_beds,
-                    occupied_non_o2_beds,
-                    tot_non_o2_beds,
-                    occupied_icu_beds,
-                    tot_icu_beds,
+                    tot_normal,
+                    tot_o2,
+                    tot_icu,
+                    occupied_normal,
+                    occupied_o2,
+                    occupied_icu,
                 )
-            )
-
-            a = open("data.chennai.csv")
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:]]))
-            dates.sort()
-
-            if date_str in dates:
-                # ~ dont_update_data_csv=True
+                print(city + ":")
+                print(row)
+            elif city == "ludhiana":
+    
+                soup = get_url_failsafe("https://ludhiana.nic.in/bed-status/")
+                links = soup.find_all("a")
+    
+                for link in links:
+                    if ".pdf" in link.get("href", []):
+                        print("Downloading pdf...")
+    
+                        l = link.get("href")
+                        print(l)
+                        response = requests.get(l)
+                        pdf = open("LDH_" + str(date_str) + ".pdf", "wb")
+                        pdf.write(response.content)
+                        pdf.close()
+                        break
+    
+                # get date
+                os.system(
+                    "pdftotext -f 1 -l 1 -x 0 -y 0 -W 500 -H 300  -layout LDH_"
+                    + str(date_str)
+                    + ".pdf tmp.txt"
+                )
+                b = [i.strip() for i in open("tmp.txt").readlines() if i.strip()]
+                date_line = ["Last edited on 9-January-2022 5.00 PM"]
+                if not date_line:
+                    print(highlight("could not extract date for Ludhiana!!"))
+                    continue
+                date_line = date_line[0].split()
+                date_line = date_line[date_line.index("on") + 1]
+                bulletin_date = datetime.datetime.strptime(date_line, "%d-%B-%Y")
+    
+                # print(text)
+                tables = read_pdf("LDH_" + str(date_str) + ".pdf", pages="all")
+                df = tables[-1]
+                print(df.iloc[-1])
+                nums = []
+                for x in df.iloc[-1]:
+                    if type(x) is None:
+                        continue
+                    if type(x) == str:
+                        for s in x.split():
+                            if s.isnumeric():
+                                nums.append(s)
+    
+                # ~ print(nums)
+                tot_o2, occupied_o2, vacant_o2, tot_icu, occupied_icu, vacant_icu = nums
+                a = open("data.ludhiana.csv")
+                r = csv.reader(a)
+                info = [i for i in r]
+                a.close()
+                dates = list(set([i[0] for i in info[1:]]))
+                dates.sort()
+                # save space by deleting the pdf
+                if os.path.exists("LDH_" + str(date_str) + ".pdf"):
+                    os.remove("LDH_" + str(date_str) + ".pdf")
+                date_str = bulletin_date.strftime("%Y-%m-%d")
+                row = (date_str, tot_o2, tot_icu, occupied_o2, occupied_icu)
+                print(city + ":" + str(row))
+                # ~ if date_str in dates:
+                # ~ print('----------\n\nData for %s already exists in data.ludhiana.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n' %(date_str))
+                # ~ else:
+                # ~ #write to file
+                # ~ info=', '.join((date_str,tot_o2,tot_icu,occupied_o2,occupied_icu))
+                # ~ print(city+' : '+str(info))
+                # ~ # Date, L2_Total_Beds, L2_Occupied_Beds, L2_Available_Beds, L3_Total_Beds, L3_Occupied_Beds, L3_Available_Beds
+                # ~ a=open('data.ludhiana.csv','a');a.write(info+'\n');a.close()
+                # ~ print('Appended to data.ludhiana.csv: '+info)
+            elif city == "chennai":
+                # CHENNAI
+                import requests
+                from requests.structures import CaseInsensitiveDict
+    
+                url = "https://tncovidbeds.tnega.org/api/hospitals"
+    
+                headers = CaseInsensitiveDict()
+                headers["authority"] = "tncovidbeds.tnega.org"
+                # headers["sec-ch-ua"] = "" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96""
+                headers["dnt"] = "1"
+                headers["sec-ch-ua-mobile"] = "?0"
+                headers[
+                    "user-agent"
+                ] = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+                headers["content-type"] = "application/json;charset=UTF-8"
+                headers["accept"] = "application/json, text/plain, */*"
+                headers["token"] = "null"
+                # headers["sec-ch-ua-platform"] = ""Linux""
+                headers["sec-ch-ua-platform"] = "Linux"
+                headers["origin"] = "https://tncovidbeds.tnega.org"
+                headers["sec-fetch-site"] = "same-origin"
+                headers["sec-fetch-mode"] = "cors"
+                headers["sec-fetch-dest"] = "empty"
+                headers["accept-language"] = "en-US,en;q=0.9"
+                # headers["cookie"] = "_ga=GA1.2.1493856265.1640076462; _gid=GA1.2.514620938.1640076462; _gat=1"
+    
+                data = '{"searchString":"","sortCondition":{"Name":1},"pageNumber":1,"pageLimit":200,"SortValue":"Availability","ShowIfVacantOnly":"","Districts":["5ea0abd2d43ec2250a483a40"],"BrowserId":"6f4dfda2b7835796132d69d0e8525127","IsGovernmentHospital":true,"IsPrivateHospital":true,"FacilityTypes":["CHO"]}'
+    
+                resp = requests.post(url, headers=headers, data=data)
+    
+                print(resp.status_code)
+                y = json.loads(resp.content.decode("unicode_escape").replace("\n", ""))
+                tot_o2_beds = 0
+                tot_non_o2_beds = 0
+                tot_icu_beds = 0
+                occupied_o2_beds = 0
+                occupied_non_o2_beds = 0
+                occupied_icu_beds = 0
+                vacant_o2_beds = 0
+                vacant_non_o2_beds = 0
+                vacant_icu_beds = 0
+    
+                for i in y["result"]:
+                    tot_o2_beds += i["CovidBedDetails"]["AllotedO2Beds"]
+                    tot_non_o2_beds += i["CovidBedDetails"]["AllotedNonO2Beds"]
+                    tot_icu_beds += i["CovidBedDetails"]["AllotedICUBeds"]
+                    occupied_o2_beds += i["CovidBedDetails"]["OccupancyO2Beds"]
+                    occupied_non_o2_beds += i["CovidBedDetails"]["OccupancyNonO2Beds"]
+                    occupied_icu_beds += i["CovidBedDetails"]["OccupancyICUBeds"]
+                    vacant_o2_beds += i["CovidBedDetails"]["VaccantO2Beds"]
+                    vacant_non_o2_beds += i["CovidBedDetails"]["VaccantNonO2Beds"]
+                    vacant_icu_beds += i["CovidBedDetails"]["VaccantICUBeds"]
                 print(
-                    "----------\n\nData for %s already exists in data.chennai.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
-                    % (date_str)
-                )
-            else:
-                # write to file
-                info = ", ".join(
-                    (
+                    "In Chennai, on %s\nO2: %d/%d occupied\nNon-O2 %d/%d occupied\nICU: %d/%d occupied"
+                    % (
                         date_str,
-                        str(tot_o2_beds),
-                        str(tot_non_o2_beds),
-                        str(tot_icu_beds),
-                        str(occupied_o2_beds),
-                        str(occupied_non_o2_beds),
-                        str(occupied_icu_beds),
+                        occupied_o2_beds,
+                        tot_o2_beds,
+                        occupied_non_o2_beds,
+                        tot_non_o2_beds,
+                        occupied_icu_beds,
+                        tot_icu_beds,
                     )
                 )
-                a = open("data.chennai.csv", "a")
-                a.write(info + "\n")
+    
+                a = open("data.chennai.csv")
+                r = csv.reader(a)
+                info = [i for i in r]
                 a.close()
-                print("Appended to data.chennai.csv: " + info)
-
-        # generic writer for most cities
-        if city in [
-            "mp",
-            "hp",
-            "pune",
-            "chandigarh",
-            "uttarakhand",
-            "kerala",
-            "ap",
-            "telangana",
-            "nagpur",
-            "nashik",
-            "gandhinagar",
-            "vadodara",
-            "wb",
-            "pb",
-            "jammu",
-            "goa",
-            "bihar",
-            "rajasthan",
-            "ludhiana",
-            "jamshedpur",
-            "jharkhand",
-            "meghalaya",
-            "manipur",
-            "up",
-            "pgimer",
-        ]:
-            csv_fname = "data." + city + ".csv"
-            a = open(csv_fname)
-            r = csv.reader(a)
-            info = [i for i in r]
-            a.close()
-            dates = list(set([i[0] for i in info[1:]]))
-            dates.sort()
-            date_str = row[0]
-
-            if date_str in dates:
-                # ~ dont_update_data_csv=True
-                print(
-                    "----------\n\nData for %s already exists in %s!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
-                    % (date_str, csv_fname)
-                )
-            else:
-                # write to file
-                a = open(csv_fname, "a")
-                w = csv.writer(a)
-                w.writerow(row)
+                dates = list(set([i[0] for i in info[1:]]))
+                dates.sort()
+    
+                if date_str in dates:
+                    # ~ dont_update_data_csv=True
+                    print(
+                        "----------\n\nData for %s already exists in data.chennai.csv!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
+                        % (date_str)
+                    )
+                else:
+                    # write to file
+                    info = ", ".join(
+                        (
+                            date_str,
+                            str(tot_o2_beds),
+                            str(tot_non_o2_beds),
+                            str(tot_icu_beds),
+                            str(occupied_o2_beds),
+                            str(occupied_non_o2_beds),
+                            str(occupied_icu_beds),
+                        )
+                    )
+                    a = open("data.chennai.csv", "a")
+                    a.write(info + "\n")
+                    a.close()
+                    print("Appended to data.chennai.csv: " + info)
+    
+            # generic writer for most cities
+            if city in [
+                "mp",
+                "hp",
+                "pune",
+                "chandigarh",
+                "uttarakhand",
+                "kerala",
+                "ap",
+                "telangana",
+                "nagpur",
+                "nashik",
+                "gandhinagar",
+                "vadodara",
+                "wb",
+                "pb",
+                "jammu",
+                "goa",
+                "bihar",
+                "rajasthan",
+                "ludhiana",
+                "jamshedpur",
+                "jharkhand",
+                "meghalaya",
+                "manipur",
+                "up",
+                "pgimer",
+            ]:
+                csv_fname = "data." + city + ".csv"
+                a = open(csv_fname)
+                r = csv.reader(a)
+                info = [i for i in r]
                 a.close()
-                print("Appended to %s :%s" % (csv_fname, str(row)))
-    # ~ except:
-    # ~ failed_cities.append(city)
+                dates = list(set([i[0] for i in info[1:]]))
+                dates.sort()
+                date_str = row[0]
+    
+                if date_str in dates:
+                    # ~ dont_update_data_csv=True
+                    print(
+                        "----------\n\nData for %s already exists in %s!!\nOnly printing, not modifying csv!!\n\n----------\n\n"
+                        % (date_str, csv_fname)
+                    )
+                else:
+                    # write to file
+                    a = open(csv_fname, "a")
+                    w = csv.writer(a)
+                    w.writerow(row)
+                    a.close()
+                    print("Appended to %s :%s" % (csv_fname, str(row)))
+        except:
+            failed_cities.append(city)
 
     if failed_cities:
         detailed_date_str = datetime.datetime.now(
