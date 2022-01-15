@@ -588,37 +588,38 @@ if __name__ == "__main__":
 
     failed_cities = []
     for city in [
-        "bengaluru",
-        "hp",
-        "mp",
-        "chennai",
-        "pune",
-        "delhi",
-        "gbn",
-        "gurugram",
-        "tn",
-        "mumbai",
-        "chandigarh",
-        "uttarakhand",
-        "kerala",
-        "ap",
-        "telangana",
-        "nagpur",
-        "nashik",
-        "gandhinagar",
-        "vadodara",
-        "wb",
-        "pb",
-        "jammu",
-        "goa",
-        "bihar",
-        "rajasthan",
-        "ludhiana",
-        "jamshedpur",
-        "jharkhand",
-        "meghalaya",
-        "up",
-        "manipur",
+        # ~ "bengaluru",
+        # ~ "hp",
+        # ~ "mp",
+        # ~ "chennai",
+        # ~ "pune",
+        # ~ "delhi",
+        # ~ "gbn",
+        # ~ "gurugram",
+        # ~ "tn",
+        # ~ "mumbai",
+        # ~ "chandigarh",
+        # ~ "uttarakhand",
+        # ~ "kerala",
+        # ~ "ap",
+        # ~ "telangana",
+        # ~ "nagpur",
+        # ~ "nashik",
+        # ~ "gandhinagar",
+        # ~ "vadodara",
+        # ~ "wb",
+        # ~ "pb",
+        # ~ "jammu",
+        # ~ "goa",
+        # ~ "bihar",
+        # ~ "rajasthan",
+        # ~ "ludhiana",
+        # ~ "jamshedpur",
+        # ~ "jharkhand",
+        # ~ "meghalaya",
+        # ~ "up",
+        # ~ "manipur",
+        "pgimer",
     ]:
         # ~ for city in ['up']:
         print("running scraper for: " + city)
@@ -726,6 +727,153 @@ if __name__ == "__main__":
                 a.write(info + "\n")
                 a.close()
                 print("Appended to data.bengaluru.csv: " + info)
+
+        elif city == "pgimer":
+            soup = get_url_failsafe(
+                "https://pgimer.edu.in/PGIMER_PORTAL/PGIMERPORTAL/GlobalPages/JSP/covidDashboardyy.jsp"
+            )
+            for body in soup("tbody"):
+                body.unwrap()
+            x = pd.read_html(str(soup), flavor="bs4")
+
+            icu, hdu, step_down, pediatric, others = list(
+                x[0].loc[len(x[0]) - 1].astype(int)
+            )
+
+            male, female = x[1].loc[len(x[1]) - 1].astype(int)
+
+            if x[2].loc[1][0].startswith("0"):  # 0-12 type
+                u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
+            else:  # 0,1-.. type
+                u1, u12, u40, u60, u80, plus80 = list(x[2].loc[2].astype(int))
+                u12 += u1
+
+            chandigarh = punjab = haryana = himachal = other_states = 0
+
+            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Chandigarh"]
+            if y:
+                chandigarh = y[0]
+            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Punjab"]
+            if y:
+                punjab = y[0]
+            y = [i[1] for i in x[3].to_dict("split")["data"] if i[0] == "Haryana"]
+            if y:
+                haryana = y[0]
+            y = [
+                i[1]
+                for i in x[3].to_dict("split")["data"]
+                if i[0] == "Himachal Pradesh"
+            ]
+            if y:
+                himachal = y[0]
+            y = [
+                i[1]
+                for i in x[3].to_dict("split")["data"]
+                if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
+            ]
+            if y:
+                other_states = sum([int(i) for i in y if i.isnumeric()])
+
+            (
+                cumulative_icu,
+                cumulative_hdu,
+                cumulative_step_down,
+                cumulative_pediatric,
+                cumulative_others,
+            ) = list(x[4].loc[len(x[4]) - 1].astype(int))
+
+            cumulative_male, cumulative_female = x[5].loc[len(x[1]) - 1].astype(int)
+
+            if x[6].loc[1][0].startswith("0"):  # 0-12 type
+                (
+                    cumulative_u12,
+                    cumulative_u40,
+                    cumulative_u60,
+                    cumulative_u80,
+                    plcumulative_us80,
+                ) = list(x[6].loc[2].astype(int))
+            else:  # 0,1-.. type
+                (
+                    cumulative_u1,
+                    cumulative_u12,
+                    cumulative_u40,
+                    cumulative_u60,
+                    cumulative_u80,
+                    plcumulative_us80,
+                ) = list(x[6].loc[2].astype(int))
+                cumulative_u12 += cumulative_u1
+
+            cumulative_chandigarh = (
+                cumulative_punjab
+            ) = cumulative_haryana = cumulative_himachal = cumulative_other_states = 0
+
+            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Chandigarh"]
+            if y:
+                cumulative_chandigarh = y[0]
+            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Punjab"]
+            if y:
+                cumulative_punjab = y[0]
+            y = [i[1] for i in x[7].to_dict("split")["data"] if i[0] == "Haryana"]
+            if y:
+                cumulative_haryana = y[0]
+            y = [
+                i[1]
+                for i in x[7].to_dict("split")["data"]
+                if i[0] == "Himachal Pradesh"
+            ]
+            if y:
+                cumulative_himachal = y[0]
+            y = [
+                i[1]
+                for i in x[7].to_dict("split")["data"]
+                if i[0] not in ["Himachal Pradesh", "Haryana", "Punjab", "Chandigarh"]
+            ]
+            if y:
+                cumulative_other_states = sum([int(i) for i in y if i.isnumeric()])
+
+            discharged, deaths, d2, d3 = x[8].loc[2].astype(int).unique()
+            deaths += d2 + d3
+
+            row = (
+                icu,
+                hdu,
+                step_down,
+                pediatric,
+                others,
+                male,
+                female,
+                u12,
+                u40,
+                u60,
+                u80,
+                plus80,
+                chandigarh,
+                punjab,
+                haryana,
+                himachal,
+                other_states,
+                cumulative_icu,
+                cumulative_hdu,
+                cumulative_step_down,
+                cumulative_pediatric,
+                cumulative_others,
+                cumulative_male,
+                cumulative_female,
+                cumulative_u12,
+                cumulative_u40,
+                cumulative_u60,
+                cumulative_u80,
+                cumulative_plus80,
+                cumulative_chandigarh,
+                cumulative_punjab,
+                cumulative_haryana,
+                cumulative_himachal,
+                cumulative_other_states,
+                discharged,
+                deaths,
+            )
+            print(city + ":")
+            print(row)
 
         elif city == "pb":
             soup = get_url_failsafe(
@@ -1030,7 +1178,7 @@ if __name__ == "__main__":
                         continue
                     dff = tables[0]
 
-                    if "Bed Status" in ' '.join(dff.columns):
+                    if "Bed Status" in " ".join(dff.columns):
                         raw_line = " ".join(list(dff.iloc[len(dff) - 1])).strip()
 
                         (
@@ -1953,6 +2101,7 @@ if __name__ == "__main__":
             "meghalaya",
             "manipur",
             "up",
+            "pgimer",
         ]:
             csv_fname = "data." + city + ".csv"
             a = open(csv_fname)

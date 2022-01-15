@@ -5,3 +5,4 @@ requests
 pillow
 tabula-py
 colorama
+html5lib
