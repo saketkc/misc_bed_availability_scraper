@@ -1026,10 +1026,11 @@ if __name__ == "__main__":
                             "Jharkhand_" + str(date_str) + ".pdf", pages=2, silent=True
                         )
                     except CalledProcessError:
+                        print("CalledProcessError when parsing Jharkhand pdf!")
                         continue
                     dff = tables[0]
 
-                    if "Bed Status" in dff.columns[2]:
+                    if "Bed Status" in ' '.join(dff.columns):
                         raw_line = " ".join(list(dff.iloc[len(dff) - 1])).strip()
 
                         (
