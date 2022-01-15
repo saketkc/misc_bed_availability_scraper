@@ -615,10 +615,10 @@ if __name__ == "__main__":
         # ~ "rajasthan",
         # ~ "ludhiana",
         # ~ "jamshedpur",
-        # ~ "jharkhand",
-        "meghalaya",
-        "up",
-        "manipur",
+        "jharkhand",
+        # ~ "meghalaya",
+        # ~ "up",
+        # ~ "manipur",
     ]:
         # ~ for city in ['up']:
         print("running scraper for: " + city)
