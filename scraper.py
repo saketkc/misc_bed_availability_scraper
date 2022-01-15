@@ -790,7 +790,7 @@ if __name__ == "__main__":
                     cumulative_u40,
                     cumulative_u60,
                     cumulative_u80,
-                    plcumulative_us80,
+                    cumulative_plus80,
                 ) = list(x[6].loc[2].astype(int))
             else:  # 0,1-.. type
                 (
@@ -799,7 +799,7 @@ if __name__ == "__main__":
                     cumulative_u40,
                     cumulative_u60,
                     cumulative_u80,
-                    plcumulative_us80,
+                    cumulative_plus80,
                 ) = list(x[6].loc[2].astype(int))
                 cumulative_u12 += cumulative_u1
 
