@@ -588,37 +588,37 @@ if __name__ == "__main__":
 
     failed_cities = []
     for city in [
-        # ~ "bengaluru",
-        # ~ "hp",
-        # ~ "mp",
-        # ~ "chennai",
-        # ~ "pune",
-        # ~ "delhi",
-        # ~ "gbn",
-        # ~ "gurugram",
-        # ~ "tn",
-        # ~ "mumbai",
-        # ~ "chandigarh",
-        # ~ "uttarakhand",
-        # ~ "kerala",
-        # ~ "ap",
-        # ~ "telangana",
-        # ~ "nagpur",
-        # ~ "nashik",
-        # ~ "gandhinagar",
-        # ~ "vadodara",
-        # ~ "wb",
-        # ~ "pb",
-        # ~ "jammu",
-        # ~ "goa",
-        # ~ "bihar",
-        # ~ "rajasthan",
-        # ~ "ludhiana",
-        # ~ "jamshedpur",
-        # ~ "jharkhand",
-        # ~ "meghalaya",
-        # ~ "up",
-        # ~ "manipur",
+        "bengaluru",
+        "hp",
+        "mp",
+        "chennai",
+        "pune",
+        "delhi",
+        "gbn",
+        "gurugram",
+        "tn",
+        "mumbai",
+        "chandigarh",
+        "uttarakhand",
+        "kerala",
+        "ap",
+        "telangana",
+        "nagpur",
+        "nashik",
+        "gandhinagar",
+        "vadodara",
+        "wb",
+        "pb",
+        "jammu",
+        "goa",
+        "bihar",
+        "rajasthan",
+        "ludhiana",
+        "jamshedpur",
+        "jharkhand",
+        "meghalaya",
+        "up",
+        "manipur",
         "pgimer",
     ]:
         # ~ for city in ['up']:
@@ -732,6 +732,17 @@ if __name__ == "__main__":
             soup = get_url_failsafe(
                 "https://pgimer.edu.in/PGIMER_PORTAL/PGIMERPORTAL/GlobalPages/JSP/covidDashboardyy.jsp"
             )
+
+            report_date = ",".join(
+                (
+                    ":".join(
+                        soup.select("#lblLast_Update")[0].text.split(":")[1:]
+                    ).split()
+                )[:3]
+            ).replace(",,", ",")
+            report_date_str = datetime.datetime.strptime(
+                report_date, "%b,%d,%Y"
+            ).strftime("%Y-%m-%d")
             for body in soup("tbody"):
                 body.unwrap()
             x = pd.read_html(str(soup), flavor="bs4")
@@ -835,6 +846,7 @@ if __name__ == "__main__":
             deaths += d2 + d3
 
             row = (
+                report_date_str,
                 icu,
                 hdu,
                 step_down,
