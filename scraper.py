@@ -793,7 +793,7 @@ if __name__ == "__main__":
                 cumulative_others,
             ) = list(x[4].loc[len(x[4]) - 1].astype(int))
 
-            cumulative_male, cumulative_female = x[5].loc[len(x[1]) - 1].astype(int)
+            cumulative_male, cumulative_female = x[5].loc[len(x[5]) - 1].astype(int)
 
             if x[6].loc[1][0].startswith("0"):  # 0-12 type
                 (
